@@ -1,3 +1,8 @@
-node_modules/
-bdES.sqlite
-uploadedFiles
+ServidorProyectoES/node_modules/
+ServidorProyectoES/bdES.sqlite
+ServidorProyectoES/uploadedFiles/
+ClienteProyectoES/build/
+ClienteProyectoES/build/built-jar.properties
+*.properties
+ClienteProyectoES/build/built-jar.properties
+ClienteProyectoES/build/built-jar.properties
