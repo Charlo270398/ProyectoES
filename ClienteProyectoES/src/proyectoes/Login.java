@@ -15,6 +15,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -314,23 +316,15 @@ public class Login extends javax.swing.JFrame {
     
     //COMPROBAMOS QUE LA CONTRASEÑA ES SEGURA
     public boolean comprobarPasswordSegura(String password){
-        boolean cEspecial = false;
-        boolean digito = false;
+        Pattern special = Pattern.compile ("[!@#$%&*()_+=|<>?{}\\[\\]~-]");
+        Pattern letter = Pattern.compile("[a-zA-z]");
+        Pattern digit = Pattern.compile("[0-9]");
+        
         if (password.length() >= 8) {
-            for (int i = 0; i < password.length(); i++) {
-                char x = password.charAt(i);
-                if (Character.isLetter(x)) {
-                    cEspecial = true;
-                }
-                else if (Character.isDigit(x)) {
-                    digito = true;
-                }
-                // no need to check further, break the loop
-                if(cEspecial && digito){
-                    break;
-                }
-            }
-            if (cEspecial && digito) {
+            Matcher hasSpecial = special.matcher(password);
+            Matcher hasLetter = letter.matcher(password);
+            Matcher hasDigit = digit.matcher(password);
+            if (hasLetter.find() && hasDigit.find() && hasSpecial.find()) {
                 jLabelError.setForeground(Color.green);
                 jLabelError.setText("Registro realizado correctamente.");
                 return true;
