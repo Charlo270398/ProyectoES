@@ -256,6 +256,7 @@ app.delete('/borrarFichero', async (req,res) => {
   
   try{ 
     fs.unlinkSync(fileRoute)
+    //checkeorama
     //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     await knex('ficheros').where({nombre: ficheroNombre}).del();
     res.status(200).send({result:"OK", error: null});
