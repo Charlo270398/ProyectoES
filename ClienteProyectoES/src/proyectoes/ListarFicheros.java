@@ -7,6 +7,7 @@ package proyectoes;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -125,6 +126,11 @@ public class ListarFicheros extends javax.swing.JFrame {
         });
 
         jButtonEliminar.setText("Eliminar");
+        jButtonEliminar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonEliminarActionPerformed(evt);
+            }
+        });
 
         jButtonBack.setText("Volver");
         jButtonBack.addActionListener(new java.awt.event.ActionListener() {
@@ -202,6 +208,19 @@ public class ListarFicheros extends javax.swing.JFrame {
         this.hide();
         FRAME_menuUsuario.setVisible(true);
     }//GEN-LAST:event_jButtonBackActionPerformed
+
+    private void jButtonEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEliminarActionPerformed
+  
+        Fichero fichero = new Fichero();   
+            try {
+                fichero.borrarFichero(MenuUsuario.USUARIO, listaFicherosNombre[jListMisFicheros.getSelectedIndex()],listaFicherosNombre[jListMisFicheros.getSelectedIndex()]);
+                getListaFicherosGET();
+        jListMisFicheros.setListData(listaFicherosNombre);
+            } catch (IOException ex) {
+                System.out.println(ex.toString());
+            }
+        
+    }//GEN-LAST:event_jButtonEliminarActionPerformed
 
     /**
      * @param args the command line arguments

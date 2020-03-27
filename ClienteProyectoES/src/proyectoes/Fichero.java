@@ -100,4 +100,37 @@ public class Fichero {
             System.out.println(ex.toString());
         } 
     }
+     public void borrarFichero(String usuario, String ficheroId, String ficheroNombre) throws FileNotFoundException, IOException{
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://localhost:5000/borrarFichero";
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("usuario", usuario)
+                .addFormDataPart("ficheroId", ficheroId)
+                .addFormDataPart("ficheroNombre", ficheroNombre)
+                .build();
+        
+        Request request = new Request.Builder()
+                .url(url)
+                .delete(body)
+                .build();
+        Response response = null;
+        try {
+            response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            JSONObject json_response = new JSONObject(new String(responseBody));
+            String result = json_response.getString("result");
+
+            //Resultado de la peticióm
+            if(!result.equals("OK")){
+
+                String error = json_response.getString("error");
+                System.out.println(error);
+            }
+        } catch (IOException ex) {
+            System.out.println(ex.toString());
+        } catch (JSONException ex) { 
+            System.out.println(ex.toString());
+        } 
+    }
 }

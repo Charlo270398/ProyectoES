@@ -247,6 +247,26 @@ app.get('/usuarios/lista', async (req,res) => {
   }
 });
 
+app.delete('/borrarFichero', async (req,res) => {
+  const user = req.body.usuario;
+  const ficheroId = req.body.ficheroId;
+  const ficheroNombre = req.body.ficheroNombre;
+  const folderRoute =  "uploadedFiles/" + user;
+  const fileRoute =  folderRoute + "/" + ficheroNombre;
+  
+  try{ 
+    fs.unlinkSync(fileRoute)
+    //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
+    await knex('ficheros').where({nombre: ficheroNombre}).del();
+    res.status(200).send({result:"OK", error: null});
+
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
 
 const PORT = process.env.PORT || 5000;
 
