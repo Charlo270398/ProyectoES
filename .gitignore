@@ -1,4 +1,11 @@
-node_modules/
-bdES.sqlite
-uploadedFiles
-/ServidorProyectoES/nbproject/private/
+ServidorProyectoES/node_modules/
+*.sqlite
+ServidorProyectoES/uploadedFiles/
+ClienteProyectoES/build/
+ClienteProyectoES/build/built-jar.properties
+*.properties
+ClienteProyectoES/build/built-jar.properties
+ServidorProyectoES/bdES.sqlite
+ClienteProyectoES/nbproject/private/private.properties
+ClienteProyectoES/nbproject/private/private.xml
+/ClienteProyectoES/dist/
