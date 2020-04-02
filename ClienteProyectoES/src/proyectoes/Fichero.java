@@ -176,7 +176,20 @@ public class Fichero {
         }
         
         //ENVIO DEL FICHERO
+        
+        //pasamos a zip el fichero
         File temporal = new File("TEMPORAL.zip"); //Cargamos el zip temporal para subirlo
+        
+        //Generamos clave aleatoria para AES
+        
+        //Ciframos con AES el fichero
+        
+        //Ciframos con clave publica nuestra clave AES para el fichero
+        
+        //Seguridad.cifrarFicheroAES(temporal, fichero.getName(), "key");
+        //File cifrado = new File(fichero.getName());
+        //Seguridad.descifrarFicheroAES(cifrado, fichero.getName() + ".zip", "key");
+        
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:5000/subirFichero";
         RequestBody body = new MultipartBody.Builder()
