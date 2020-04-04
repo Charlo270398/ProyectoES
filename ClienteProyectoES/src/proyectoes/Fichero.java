@@ -5,6 +5,7 @@
  */
 package proyectoes;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -23,6 +25,7 @@ import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import static proyectoes.MenuUsuario.USUARIO;
 
 
 /**
@@ -133,6 +136,40 @@ public class Fichero {
         return file.substring(SOURCE_FOLDER.length() + 1, file.length());
     }
     
+    public void extractZip(String filename, File target) throws IOException {
+        FileInputStream fos = new FileInputStream(filename);
+        ZipInputStream zip = new ZipInputStream(fos);
+        try {
+            ZipEntry entry;
+
+            while ((entry = zip.getNextEntry()) != null) {
+                File file = new File(target, entry.getName());
+
+                if (!file.toPath().normalize().startsWith(target.toPath())) {
+                    throw new IOException("Bad zip entry");
+                }
+
+                if (entry.isDirectory()) {
+                    file.mkdirs();
+                    continue;
+                }
+
+                byte[] buffer = new byte[4096];
+                file.getParentFile().mkdirs();
+                BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+                int count;
+
+                while ((count = zip.read(buffer)) != -1) {
+                    out.write(buffer, 0, count);
+                }
+
+                out.close();
+            }
+        } finally {
+            zip.close();
+        }
+    }
+    
     public void getFicheroGET(String ficheroId){
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:5000/obtenerFichero?ficheroId="+ficheroId;
@@ -152,10 +189,23 @@ public class Fichero {
                 for (int i =0; i < bytearray_json.length(); i++ ) {
                     bytes[i] = (byte)(int)bytearray_json.get(i);
                 }
-                File file = new File(filename);
-                OutputStream os = new FileOutputStream(file);
+                
+                //Obtenemos fichero cifrado con AES
+                File cifradoTEMP = new File(filename);
+                OutputStream os = new FileOutputStream(cifradoTEMP);
                 os.write(bytes);
                 os.close();
+                
+                //Desciframos el fichero
+                Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", "key");
+                
+                //Descomprimimos ZIP
+                extractZip(filename + ".zip", new File(USUARIO + "_DESCARGAS"));
+                //Borramos fichero cifrado y el ZIP
+                cifradoTEMP.delete();
+                File zip = new File(filename + ".zip");
+                zip.delete();
+                
             } catch (Exception e) {
                 System.out.println(e);
             }
@@ -177,25 +227,24 @@ public class Fichero {
         
         //ENVIO DEL FICHERO
         
-        //pasamos a zip el fichero
-        File temporal = new File("TEMPORAL.zip"); //Cargamos el zip temporal para subirlo
+        //Pasamos a zip el fichero
+        File TEMP = new File("TEMPORAL.zip"); //Cargamos el zip temporal para subirlo
         
-        //Generamos clave aleatoria para AES
+        //Generamos clave aleatoria para AES --TODO
         
         //Ciframos con AES el fichero
+        Seguridad.cifrarFicheroAES(TEMP, fichero.getName(), "key");
+        File cifradoTEMP = new File(fichero.getName());
+        //Ciframos con clave publica nuestra clave AES para el fichero -- TODO
         
-        //Ciframos con clave publica nuestra clave AES para el fichero
         
-        //Seguridad.cifrarFicheroAES(temporal, fichero.getName(), "key");
-        //File cifrado = new File(fichero.getName());
-        //Seguridad.descifrarFicheroAES(cifrado, fichero.getName() + ".zip", "key");
         
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:5000/subirFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)
-                .addFormDataPart("file1", fichero.getName() + ".zip", RequestBody.create(MediaType.parse("zip"), temporal))
+                .addFormDataPart("file1", fichero.getName(), RequestBody.create(MediaType.parse("zip"), cifradoTEMP))
                 .build();
         
         Request request = new Request.Builder()
@@ -212,7 +261,8 @@ public class Fichero {
             //Resultado de la peticióm
             if(result.equals("OK")){
                 System.out.println(result);
-                temporal.delete();//Borramos el zip temporal
+                TEMP.delete();//Borramos el zip temporal
+                cifradoTEMP.delete();//Borramos el cifrado temporal
             }else{
                 String error = json_response.getString("error");
                 System.out.println(error);
@@ -244,7 +294,7 @@ public class Fichero {
             JSONObject json_response = new JSONObject(new String(responseBody));
             String result = json_response.getString("result");
 
-            //Resultado de la peticióm
+            //Resultado de la petición
             if(!result.equals("OK")){
 
                 String error = json_response.getString("error");
