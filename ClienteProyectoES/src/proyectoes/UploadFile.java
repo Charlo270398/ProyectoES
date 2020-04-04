@@ -202,6 +202,8 @@ public class UploadFile extends javax.swing.JFrame {
             try {
                 Fichero fichero = new Fichero (selectedFile);
                 fichero.subirFicheroPOST(MenuUsuario.USUARIO);
+                selectedFile = null;
+                jLabelFichero.setText("Fichero sin seleccionar");
                 this.hide();
                 FRAME_menuUsuario.setVisible(true);
             } catch (IOException ex) {
@@ -212,8 +214,10 @@ public class UploadFile extends javax.swing.JFrame {
 
     private void jButtonBackActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBackActionPerformed
         // TODO add your handling code here:
+        selectedFile = null;
+        jLabelFichero.setText("Fichero sin seleccionar");
         this.hide();
-        FRAME_menuUsuario.setVisible(true);
+        FRAME_menuUsuario.setVisible(true); 
     }//GEN-LAST:event_jButtonBackActionPerformed
 
     private void jButtonCompartirArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCompartirArchivoActionPerformed

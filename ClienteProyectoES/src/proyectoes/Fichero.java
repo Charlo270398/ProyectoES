@@ -25,6 +25,8 @@ import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import static proyectoes.Login.IP;
+import static proyectoes.Login.PORT;
 import static proyectoes.MenuUsuario.USUARIO;
 
 
@@ -172,7 +174,7 @@ public class Fichero {
     
     public void getFicheroGET(String ficheroId){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:5000/obtenerFichero?ficheroId="+ficheroId;
+        String url = "http://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -240,7 +242,7 @@ public class Fichero {
         
         
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:5000/subirFichero";
+        String url = "http://"+IP+":"+PORT+"/subirFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)
@@ -275,7 +277,7 @@ public class Fichero {
     }
      public void borrarFichero(String usuario, String ficheroId, String ficheroNombre) throws FileNotFoundException, IOException{
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:5000/borrarFichero";
+        String url = "http://"+IP+":"+PORT+"/borrarFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)

@@ -4,9 +4,12 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/Fichero.java</file>
+            <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/SetURL.java</file>
             <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/Seguridad.java</file>
-            <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/AES/AES.java</file>
+            <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/MenuUsuario.java</file>
             <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/Login.java</file>
+            <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/ListarFicheros.java</file>
+            <file>file:/C:/Users/Carlos/Documents/GitHub/ProyectoES/ClienteProyectoES/src/proyectoes/UploadFile.java</file>
         </group>
     </open-files>
 </project-private>
