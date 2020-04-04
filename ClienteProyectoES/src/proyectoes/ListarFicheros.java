@@ -15,6 +15,8 @@ import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static proyectoes.Login.FRAME_menuUsuario;
+import static proyectoes.Login.IP;
+import static proyectoes.Login.PORT;
 
 /**
  *
@@ -36,7 +38,7 @@ public class ListarFicheros extends javax.swing.JFrame {
     
     public void getListaFicherosGET(){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:5000/obtenerListaFicheros?userId=" + MenuUsuario.USER_ID;
+        String url = "http://"+IP+":"+PORT+"/obtenerListaFicheros?userId=" + MenuUsuario.USER_ID;
         Request request = new Request.Builder()
                 .url(url)
                 .get()

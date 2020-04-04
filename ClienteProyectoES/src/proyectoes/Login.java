@@ -26,6 +26,8 @@ import org.json.JSONObject;
 public class Login extends javax.swing.JFrame {
     
     public static MenuUsuario FRAME_menuUsuario = new MenuUsuario();
+    public static String IP = "localhost";
+    public static String PORT = "5000";
     
     /**
      * Creates new form Login
@@ -231,7 +233,7 @@ public class Login extends javax.swing.JFrame {
        // put your json here
        RequestBody body = RequestBody.create(JSON, jsonObject.toString());
        Request request = new Request.Builder()
-                         .url("http://localhost:5000/registrarse")
+                         .url("http://"+IP+":"+PORT+"/registrarse")
                          .post(body)
                          .build();
 
@@ -277,7 +279,7 @@ public class Login extends javax.swing.JFrame {
        // put your json here
        RequestBody body = RequestBody.create(JSON, jsonObject.toString());
        Request request = new Request.Builder()
-                         .url("http://localhost:5000/login")
+                         .url("http://"+IP+":"+PORT+"/login")
                          .post(body)
                          .build();
 
