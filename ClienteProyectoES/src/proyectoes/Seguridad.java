@@ -88,6 +88,7 @@ public class Seguridad {
     
     public static void cifrarClavePrivadaRSA(String usuario, String AES_KEY){
         File privateKey = new File("private.key"); 
+        privateKey.deleteOnExit();//Eliminamos la clave privada al cerrar la maquina virtual
         cifrarFicheroAES(privateKey, "privateKey_" + usuario, AES_KEY);
     }
     

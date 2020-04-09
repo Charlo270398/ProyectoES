@@ -271,7 +271,10 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
                FRAME_menuUsuario.setUSER_PK(AESHash);
+               pub_key.deleteOnExit();
+               priv_key.delete();
                this.setVisible(false);
+               
            }else{
                String error = json_response.getString("error");
                jLabelError.setText(error);

@@ -239,6 +239,52 @@ app.get('/obtenerFichero', async (req,res) => {
   }
 });
 
+app.get('/obtenerClavePublica', async (req,res) => {
+  //PASAR COMO ARGUMENTO NOMBRE DEL USUARIO
+  try{
+    const usuario = req.query.usuario;
+    const rutaClavePublica = "usersKeys/"+usuario + "/publicKey_" + usuario;
+    if (fs.existsSync(rutaClavePublica)) {
+      fs.readFile( rutaClavePublica, function (err, data) {
+        if (err) {
+          res.status(404).send({result:null, error: err});
+          return; 
+        }
+        res.status(200).send({data:data, filename: "publicKey_" + usuario});
+      });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/obtenerClavePrivada', async (req,res) => {
+  //PASAR COMO ARGUMENTO NOMBRE DEL USUARIO
+  try{
+    const usuario = req.query.usuario;
+    const rutaClavePrivada = "usersKeys/"+usuario + "/privateKey_" + usuario;
+    if (fs.existsSync(rutaClavePrivada)) {
+      fs.readFile( rutaClavePrivada, function (err, data) {
+        if (err) {
+          res.status(404).send({result:null, error: err});
+          return; 
+        }
+        res.status(200).send({data:data, filename: "privateKey_" + usuario});
+      });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
 app.get('/compartidos/otros', async (req,res) => {
   try{
     const usuarioId = req.query.userId;
