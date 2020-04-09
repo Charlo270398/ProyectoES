@@ -7,6 +7,9 @@ package proyectoes;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileSystemView;
 import static proyectoes.Login.FRAME_menuUsuario;
@@ -204,7 +207,11 @@ public class UploadFile extends javax.swing.JFrame {
                 fichero.setCopia_diaria(jCheckBoxDiaria.isSelected());
                 fichero.setCopia_semanal(jCheckBoxSemanal.isSelected());
                 fichero.setCopia_mensual(jCheckBoxMensual.isSelected());
-                fichero.subirFicheroPOST(MenuUsuario.USUARIO);
+                try {
+                    fichero.subirFicheroPOST(MenuUsuario.USUARIO);
+                } catch (NoSuchAlgorithmException ex) {
+                    System.out.println(ex.toString());
+                }
                 //Reiniciamos los valores
                 selectedFile = null;
                 jLabelFichero.setText("Fichero sin seleccionar");

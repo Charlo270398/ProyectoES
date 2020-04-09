@@ -12,10 +12,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -27,6 +31,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import static proyectoes.Login.IP;
 import static proyectoes.Login.PORT;
+import static proyectoes.MenuUsuario.USER_AES_KEY;
 import static proyectoes.MenuUsuario.USUARIO;
 
 
@@ -199,6 +204,7 @@ public class Fichero {
                 JSONObject json_response=new JSONObject(new String(responseBody));
                 JSONObject data = (JSONObject) json_response.get("data");
                 String filename = (String) json_response.get("filename");
+                String clave_AES_CIFRADA = (String) json_response.get("clave");
                 JSONArray bytearray_json = (JSONArray) data.get("data");
                 byte[] bytes = new byte[bytearray_json.length()];
                 for (int i =0; i < bytearray_json.length(); i++ ) {
@@ -211,16 +217,21 @@ public class Fichero {
                 os.write(bytes);
                 os.close();
                 
+                //Desciframos la clave AES con la clave privada
+                Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
+                String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
+                
                 //Desciframos el fichero
-                Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", "key");
+                Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
                 
                 //Descomprimimos ZIP
                 extractZip(filename + ".zip", new File(USUARIO + "_DESCARGAS"));
-                //Borramos fichero cifrado y el ZIP
+                //Borramos fichero cifrado, el ZIP y la clave privada descifrada
                 cifradoTEMP.delete();
                 File zip = new File(filename + ".zip");
                 zip.delete();
-                
+                File pkdescifrada = new File("private.key");
+                pkdescifrada.delete();
             } catch (Exception e) {
                 System.out.println(e);
             }
@@ -229,7 +240,7 @@ public class Fichero {
         }
     }
     
-    public void subirFicheroPOST(String usuario) throws IOException{
+    public void subirFicheroPOST(String usuario) throws IOException, NoSuchAlgorithmException{
         //COMPRESION A ZIP
         if(fichero.isDirectory()){
             //SI EL ES CARPETA
@@ -246,14 +257,19 @@ public class Fichero {
         File TEMP = new File("TEMPORAL.zip"); //Cargamos el zip temporal para subirlo
         
         //Generamos clave aleatoria para AES --TODO
-        
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(256);
+        SecretKey secretKey = keyGen.generateKey();
+        String key = String.valueOf(secretKey.getEncoded());
+        // converts to base64 for easier display.
+        byte[] base64Cipher = Base64.getEncoder().encode(secretKey.getEncoded());
+
         //Ciframos con AES el fichero
-        Seguridad.cifrarFicheroAES(TEMP, fichero.getName(), "key");
+        Seguridad.cifrarFicheroAES(TEMP, fichero.getName(), new String(base64Cipher));
         File cifradoTEMP = new File(fichero.getName());
-        //Ciframos con clave publica nuestra clave AES para el fichero -- TODO
         
-        
-        
+        //Ciframos con RSA la clave AES aleatoria
+        String clave_AES_CIFRADA = Seguridad.cifrarConRSA(new String(base64Cipher));
         OkHttpClient client = new OkHttpClient();
         String url = "http://"+IP+":"+PORT+"/subirFichero";
         RequestBody body = new MultipartBody.Builder()
@@ -262,6 +278,7 @@ public class Fichero {
                 .addFormDataPart("copia_diaria", String.valueOf(copia_diaria))
                 .addFormDataPart("copia_semanal", String.valueOf(copia_semanal))
                 .addFormDataPart("copia_mensual", String.valueOf(copia_mensual))
+                .addFormDataPart("clave", clave_AES_CIFRADA)
                 .addFormDataPart("file1", fichero.getName(), RequestBody.create(MediaType.parse("zip"), cifradoTEMP))
                 .build();
         

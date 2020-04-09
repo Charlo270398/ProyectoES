@@ -29,7 +29,7 @@ import javax.crypto.SealedObject;
 
 public class RSA {
     
-    public void generarClaves(){
+    public static void generarClaves(){
         try {
             // Get an instance of the RSA key generator
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
@@ -51,55 +51,81 @@ public class RSA {
     }
      
    public static String encrypt(String textoPlano) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, FileNotFoundException, IOException, InvalidKeySpecException
-{
-    //get the public key
-    //PublicKey pk=pair.getPublic(); 
-    
-    FileInputStream keyfis = new FileInputStream("public.key");
-    byte[] encKey = new byte[keyfis.available()];  
-    keyfis.read(encKey);
-    keyfis.close();
-    X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encKey);
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PublicKey pk = keyFactory.generatePublic(pubKeySpec);
- 
-    //Initialize the cipher for encryption. Use the public key.
-    Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
-    rsaCipher.init(Cipher.ENCRYPT_MODE, pk);
+    {
+        //get the public key
+        //PublicKey pk=pair.getPublic(); 
 
-    //Perform the encryption using doFinal
-    byte[] encByte = rsaCipher.doFinal(textoPlano.getBytes());
+        FileInputStream keyfis = new FileInputStream("public.key");
+        byte[] encKey = new byte[keyfis.available()];  
+        keyfis.read(encKey);
+        keyfis.close();
+        X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encKey);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PublicKey pk = keyFactory.generatePublic(pubKeySpec);
 
-    // converts to base64 for easier display.
-    byte[] base64Cipher = Base64.getEncoder().encode(encByte);
+        //Initialize the cipher for encryption. Use the public key.
+        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
+        rsaCipher.init(Cipher.ENCRYPT_MODE, pk);
 
-    return new String(base64Cipher);
-}//end encrypt
+        //Perform the encryption using doFinal
+        byte[] encByte = rsaCipher.doFinal(textoPlano.getBytes());
 
-public static String decrypt(String criptograma) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, FileNotFoundException, IOException, InvalidKeySpecException
-{
-    //get the public key
-    //PrivateKey pvk=pair.getPrivate(); 
-    
-    FileInputStream keyfis = new FileInputStream("private.key");
-    byte[] encKey = new byte[keyfis.available()];  
-    keyfis.read(encKey);
-    keyfis.close();
-    PKCS8EncodedKeySpec pubKeySpec = new PKCS8EncodedKeySpec(encKey);
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PrivateKey pvk = keyFactory.generatePrivate(pubKeySpec);
-    //Create a Cipher object
-    //Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
+        // converts to base64 for easier display.
+        byte[] base64Cipher = Base64.getEncoder().encode(encByte);
 
-    //Initialize the cipher for encryption. Use the public key.
-    Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
-    rsaCipher.init(Cipher.DECRYPT_MODE, pvk);
+        return new String(base64Cipher);
+    }//end encrypt
 
-    //Perform the encryption using doFinal
-    byte[] decByte = rsaCipher.doFinal(criptograma.getBytes());
+    public static String decrypt(String criptograma) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, FileNotFoundException, IOException, InvalidKeySpecException
+    {
+        //get the public key
+        //PrivateKey pvk=pair.getPrivate(); 
 
-    return new String(decByte);
+        FileInputStream keyfis = new FileInputStream("private.key");
+        byte[] encKey = new byte[keyfis.available()];  
+        keyfis.read(encKey);
+        keyfis.close();
+        PKCS8EncodedKeySpec pubKeySpec = new PKCS8EncodedKeySpec(encKey);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PrivateKey pvk = keyFactory.generatePrivate(pubKeySpec);
+        //Create a Cipher object
+        //Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
 
-}//end decrypt
-   
+        //Initialize the cipher for encryption. Use the public key.
+        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
+        rsaCipher.init(Cipher.DECRYPT_MODE, pvk);
+
+        //Perform the encryption using doFinal
+        byte[] decByte = rsaCipher.doFinal(Base64.getDecoder().decode(criptograma));
+
+        return new String(decByte);
+        
+        
+
+    }//end decrypt
+     public static void main(String args[]) {
+         //PARA HACER PRUEBAS
+        try {
+            generarClaves();
+            String cifrado = encrypt("HOLI");
+            System.out.println(cifrado);
+            System.out.println(decrypt(cifrado));
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchPaddingException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeySpecException ex) {
+            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+
 }

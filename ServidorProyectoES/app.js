@@ -52,6 +52,7 @@ async function creaEsquema(res) {
         tabla.boolean('copia_diaria');
         tabla.boolean('copia_semanal');
         tabla.boolean('copia_mensual');
+        tabla.string('clave');
       });
       console.log("Se ha creado la tabla ficheros");
     }
@@ -59,11 +60,12 @@ async function creaEsquema(res) {
     if (!existeTabla) {
       await knex.schema.createTable('comparticion_ficheros', (tabla) => {
         tabla.increments('ficheroCompartido_id').primary();
-        tabla.integer('propietarioId');
-        tabla.integer('compartidoId');
+        tabla.integer('propietario');
+        tabla.integer('compartido');
         tabla.string('rutaFichero');
         tabla.string('nombreFichero');
-        tabla.unique(['propietarioId', 'compartidoId', 'rutaFichero']);
+        tabla.string('claveCompartida');
+        tabla.unique(['propietario', 'compartido', 'rutaFichero']);
       });
       console.log("Se ha creado la tabla comparticion_ficheros");
     }
@@ -164,14 +166,15 @@ app.post('/registrarse', async (req,res) => {
 
 app.post('/subirFichero', async (req,res) => {
   if(req.files){
-    var file = req.files.file1;
-    var user = req.body.usuario;
-    var copia_diaria = req.body.copia_diaria;
-    var copia_semanal = req.body.copia_semanal;
-    var copia_mensual = req.body.copia_mensual;
-    var filename = file.name;
+    const file = req.files.file1;
+    const user = req.body.usuario;
+    const copia_diaria = req.body.copia_diaria;
+    const copia_semanal = req.body.copia_semanal;
+    const copia_mensual = req.body.copia_mensual;
+    const filename = file.name;
     const folderRoute =  "uploadedFiles/" + user;
     const fileRoute =  folderRoute + "/" + filename;
+    const clave = req.body.clave;
     if (!fs.existsSync(folderRoute)) {
       fs.mkdirSync(folderRoute);
     }
@@ -185,7 +188,7 @@ app.post('/subirFichero', async (req,res) => {
     //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     try{
       var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
-                  copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual};
+                  copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
       await knex('ficheros').insert(fila);
       res.status(200).send({result:"OK", error: null});
     }catch(err){
@@ -220,14 +223,14 @@ app.get('/obtenerFichero', async (req,res) => {
   //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LAS RUTAS DEL MISMO ETC, LUEGO DEVOLVERLAS
   try{
     const ficheroId = req.query.ficheroId;
-    const rutaFichero = await knex('ficheros').select('ruta','nombre').where('fichero_id',ficheroId).first();
+    const rutaFichero = await knex('ficheros').select('ruta','nombre','clave').where('fichero_id',ficheroId).first();
     if (fs.existsSync(rutaFichero.ruta)) {
       fs.readFile( rutaFichero.ruta, function (err, data) {
         if (err) {
           res.status(404).send({result:null, error: err});
           return; 
         }
-        res.status(200).send({data:data, filename: rutaFichero.nombre});
+        res.status(200).send({data:data, filename: rutaFichero.nombre, clave: rutaFichero.clave});
       });
     }else{
       res.status(404).send({result:null, error: err});

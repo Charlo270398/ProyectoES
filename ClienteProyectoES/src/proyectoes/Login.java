@@ -287,7 +287,7 @@ public class Login extends javax.swing.JFrame {
        }
     }    
     
-    private void loginPOST(String usuario, String password, String PKHash){
+    private void loginPOST(String usuario, String password, String AES_Hash){
         // create your json here
         JSONObject jsonObject = new JSONObject();
         try {
@@ -320,7 +320,8 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
-               FRAME_menuUsuario.setUSER_PK(PKHash);
+               FRAME_menuUsuario.setUSER_PK(AES_Hash);
+               Seguridad.descargarClavePublicaRSA(usuario);
                this.setVisible(false);
            }else{
                String error = json_response.getString("error");
