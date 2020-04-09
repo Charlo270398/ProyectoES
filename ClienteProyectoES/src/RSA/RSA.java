@@ -1,77 +1,105 @@
-package RSA;
+package RSA; 
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import java.security.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SealedObject;
+    
 
 public class RSA {
-
-    private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
-    private static String privateKey = "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAKAUZV+tjiNBKhlBZbKBnzeugpdYPhh5PbHanjV0aQ+LF7vetPYhbTiCVqA3a+Chmge44+prlqd3qQCYra6OYIe7oPVq4mETa1c/7IuSlKJgxC5wMqYKxYydb1eULkrs5IvvtNddx+9O/JlyM5sTPosgFHOzr4WqkVtQ71IkR+HrAgMBAAECgYAkQLo8kteP0GAyXAcmCAkA2Tql/8wASuTX9ITD4lsws/VqDKO64hMUKyBnJGX/91kkypCDNF5oCsdxZSJgV8owViYWZPnbvEcNqLtqgs7nj1UHuX9S5yYIPGN/mHL6OJJ7sosOd6rqdpg6JRRkAKUV+tmN/7Gh0+GFXM+ug6mgwQJBAO9/+CWpCAVoGxCA+YsTMb82fTOmGYMkZOAfQsvIV2v6DC8eJrSa+c0yCOTa3tirlCkhBfB08f8U2iEPS+Gu3bECQQCrG7O0gYmFL2RX1O+37ovyyHTbst4s4xbLW4jLzbSoimL235lCdIC+fllEEP96wPAiqo6dzmdH8KsGmVozsVRbAkB0ME8AZjp/9Pt8TDXD5LHzo8mlruUdnCBcIo5TMoRG2+3hRe1dHPonNCjgbdZCoyqjsWOiPfnQ2Brigvs7J4xhAkBGRiZUKC92x7QKbqXVgN9xYuq7oIanIM0nz/wq190uq0dh5Qtow7hshC/dSK3kmIEHe8z++tpoLWvQVgM538apAkBoSNfaTkDZhFavuiVl6L8cWCoDcJBItip8wKQhXwHp0O3HLg10OEd14M58ooNfpgt+8D8/8/2OOFaR0HzA+2Dm";
-
-    public static PublicKey getPublicKey(String base64PublicKey){
-        PublicKey publicKey = null;
-        try{
-            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(base64PublicKey.getBytes()));
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            publicKey = keyFactory.generatePublic(keySpec);
-            return publicKey;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        return publicKey;
-    }
-
-    public static PrivateKey getPrivateKey(String base64PrivateKey){
-        PrivateKey privateKey = null;
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64PrivateKey.getBytes()));
-        KeyFactory keyFactory = null;
+    
+    public void generarClaves(){
         try {
-            keyFactory = KeyFactory.getInstance("RSA");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            // Get an instance of the RSA key generator
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+            // Generate the keys — might take sometime on slow computers
+            KeyPair myPair = kpg.generateKeyPair();
+            
+            byte[] publickey = myPair.getPublic().getEncoded();
+            FileOutputStream pubkeyfos = new FileOutputStream("public.key");
+            pubkeyfos.write(publickey);
+            pubkeyfos.close();
+            
+            byte[] privatekey = myPair.getPrivate().getEncoded();
+            FileOutputStream privkeyfos = new FileOutputStream("private.key");
+            privkeyfos.write(privatekey);
+            privkeyfos.close();
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
         }
-        try {
-            privateKey = keyFactory.generatePrivate(keySpec);
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        return privateKey;
     }
+     
+   public static String encrypt(String textoPlano) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, FileNotFoundException, IOException, InvalidKeySpecException
+{
+    //get the public key
+    //PublicKey pk=pair.getPublic(); 
+    
+    FileInputStream keyfis = new FileInputStream("public.key");
+    byte[] encKey = new byte[keyfis.available()];  
+    keyfis.read(encKey);
+    keyfis.close();
+    X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encKey);
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    PublicKey pk = keyFactory.generatePublic(pubKeySpec);
+ 
+    //Initialize the cipher for encryption. Use the public key.
+    Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
+    rsaCipher.init(Cipher.ENCRYPT_MODE, pk);
 
-    public static byte[] encrypt(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        Cipher cipher = Cipher.getInstance("RSA");//"RSA/ECB/PKCS1Padding"
-        cipher.init(Cipher.ENCRYPT_MODE, getPublicKey(publicKey));
-        return cipher.doFinal(data.getBytes());
-    }
+    //Perform the encryption using doFinal
+    byte[] encByte = rsaCipher.doFinal(textoPlano.getBytes());
 
-    public static String decrypt(byte[] data, PrivateKey privateKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        Cipher cipher = Cipher.getInstance("RSA");//"RSA/ECB/PKCS1Padding"
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        return new String(cipher.doFinal(data));
-    }
+    // converts to base64 for easier display.
+    byte[] base64Cipher = Base64.getEncoder().encode(encByte);
 
-    public static String decrypt(String data, String base64PrivateKey) throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
-        return decrypt(Base64.getDecoder().decode(data.getBytes()), getPrivateKey(base64PrivateKey));
-    }
+    return new String(base64Cipher);
+}//end encrypt
 
-    public static void main(String[] args) throws IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, BadPaddingException {
-        try {
-            String encryptedString = Base64.getEncoder().encodeToString(encrypt("Dhiraj is the author", publicKey));
-            System.out.println(encryptedString);
-            String decryptedString = RSA.decrypt(encryptedString, privateKey);
-            System.out.println(decryptedString);
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println(e.getMessage());
-        }
+public static String decrypt(String criptograma) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, FileNotFoundException, IOException, InvalidKeySpecException
+{
+    //get the public key
+    //PrivateKey pvk=pair.getPrivate(); 
+    
+    FileInputStream keyfis = new FileInputStream("private.key");
+    byte[] encKey = new byte[keyfis.available()];  
+    keyfis.read(encKey);
+    keyfis.close();
+    PKCS8EncodedKeySpec pubKeySpec = new PKCS8EncodedKeySpec(encKey);
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    PrivateKey pvk = keyFactory.generatePrivate(pubKeySpec);
+    //Create a Cipher object
+    //Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
 
-    }
+    //Initialize the cipher for encryption. Use the public key.
+    Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
+    rsaCipher.init(Cipher.DECRYPT_MODE, pvk);
+
+    //Perform the encryption using doFinal
+    byte[] decByte = rsaCipher.doFinal(criptograma.getBytes());
+
+    return new String(decByte);
+
+}//end decrypt
+   
 }

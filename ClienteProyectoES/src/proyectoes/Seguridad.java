@@ -7,6 +7,7 @@
 package proyectoes;
 
 import AES.AES;
+import RSA.RSA;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger; 
@@ -15,6 +16,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
+import static proyectoes.MenuUsuario.USUARIO;
+import static proyectoes.MenuUsuario.USER_AES_KEY;
 
 /**
  *
@@ -76,5 +79,21 @@ public class Seguridad {
             Logger.getLogger(Seguridad.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
+    }
+    
+    public static void generarClavesRSA(){
+        RSA rsa = new RSA();
+        rsa.generarClaves();
+    }
+    
+    public static void cifrarClavePrivadaRSA(String usuario, String AES_KEY){
+        File privateKey = new File("private.key"); 
+        cifrarFicheroAES(privateKey, "privateKey_" + usuario, AES_KEY);
+    }
+    
+    public static void descifrarClavePrivadaRSA(String usuario, String AES_KEY){
+        File privateKey = new File("privateKey_" + usuario); 
+        descifrarFicheroAES(privateKey, "private.key", AES_KEY);
+        privateKey.delete();
     }
 }
