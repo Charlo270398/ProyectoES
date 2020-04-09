@@ -132,8 +132,28 @@ app.post('/registrarse', async (req,res) => {
     const usuario = req.body.usuario;
     const password = req.body.password;
     const passwordData = hash.saltHashPassword(password);
+    const publicKey = req.files.publicKey;
+    const privateKey = req.files.privateKey;
+    const keysRoute = "usersKeys/"+usuario + "/";
     var fila = {usuario: usuario, password: passwordData.passwordHash, salt: passwordData.salt};
     const user_id = await knex('usuarios').insert(fila);
+    if (!fs.existsSync(keysRoute)) {
+      fs.mkdirSync(keysRoute);
+    }
+    publicKey.mv(keysRoute + publicKey.name, function(err){
+      if(err){
+        console.log(err);
+        res.status(404).send({result:"ERROR", error: err});
+        return;
+      }
+    });
+    privateKey.mv(keysRoute + privateKey.name, function(err){
+      if(err){
+        console.log(err);
+        res.status(404).send({result:"ERROR", error: err});
+        return;
+      }
+    });
     res.status(200).send({result:"OK", userId: user_id[0], error: null});
   }catch (err) {
     console.log(err);
@@ -282,6 +302,9 @@ app.listen(PORT, function () {
   //SI NO EXISTE LA CARPETA DE LOS FICHEROS LA CREAMOS
   if (!fs.existsSync("uploadedFiles")) {
     fs.mkdirSync("uploadedFiles");
+  }
+  if (!fs.existsSync("usersKeys")) {
+    fs.mkdirSync("usersKeys");
   }
   console.log(`Aplicación lanzada en el puerto ${ PORT }!`);
 });
