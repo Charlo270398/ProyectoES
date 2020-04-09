@@ -49,6 +49,9 @@ async function creaEsquema(res) {
         tabla.string('ruta').unique();
         tabla.string('propietario', 50);
         tabla.datetime('fecha_modificacion');
+        tabla.boolean('copia_diaria');
+        tabla.boolean('copia_semanal');
+        tabla.boolean('copia_mensual');
       });
       console.log("Se ha creado la tabla ficheros");
     }
@@ -134,7 +137,7 @@ app.post('/registrarse', async (req,res) => {
     res.status(200).send({result:"OK", userId: user_id[0], error: null});
   }catch (err) {
     console.log(err);
-    res.status(404).send({result:null, error: err});
+    res.status(404).send({result:"ERROR", error: err.toString()});
     return;
   }
 });
@@ -143,6 +146,9 @@ app.post('/subirFichero', async (req,res) => {
   if(req.files){
     var file = req.files.file1;
     var user = req.body.usuario;
+    var copia_diaria = req.body.copia_diaria;
+    var copia_semanal = req.body.copia_semanal;
+    var copia_mensual = req.body.copia_mensual;
     var filename = file.name;
     const folderRoute =  "uploadedFiles/" + user;
     const fileRoute =  folderRoute + "/" + filename;
@@ -158,7 +164,8 @@ app.post('/subirFichero', async (req,res) => {
     });
     //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     try{
-      var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss")};
+      var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
+                  copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual};
       await knex('ficheros').insert(fila);
       res.status(200).send({result:"OK", error: null});
     }catch(err){

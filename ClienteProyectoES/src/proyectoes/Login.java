@@ -189,7 +189,11 @@ public class Login extends javax.swing.JFrame {
         {
             jLabelError.setText("Existen campos vacíos");
         }else{
-            loginPOST(usuario, s.getSHA512(password));
+            String hash = s.getSHA512(password);
+            //Mitad login, mitad clave privada
+            String loginHash = hash.substring(0, hash.length()/2);
+            String PKHash = hash.substring(hash.length()/2);
+            loginPOST(usuario, loginHash, PKHash);
         }
     }//GEN-LAST:event_jButtonLoginActionPerformed
 
@@ -209,7 +213,11 @@ public class Login extends javax.swing.JFrame {
         }else{
             //Comprobar contraseña segura
             if(comprobarPasswordSegura(password)){
-                registrarsePOST(usuario, s.getSHA512(password));
+                String hash = s.getSHA512(password);
+                //Mitad login, mitad clave privada
+                String loginHash = hash.substring(0, hash.length()/2);
+                String PKHash = hash.substring(hash.length()/2);
+                registrarsePOST(usuario, loginHash, PKHash);
             }
         }
     }//GEN-LAST:event_jButtonRegistroActionPerformed
@@ -218,7 +226,7 @@ public class Login extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldPasswordActionPerformed
 
-    private void registrarsePOST(String usuario, String password){
+    private void registrarsePOST(String usuario, String password, String PKHash){
         // create your json here
         JSONObject jsonObject = new JSONObject();
         try {
@@ -251,6 +259,7 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
+               FRAME_menuUsuario.setUSER_PK(PKHash);
                this.setVisible(false);
            }else{
                String error = json_response.getString("error");
@@ -264,7 +273,7 @@ public class Login extends javax.swing.JFrame {
        }
     }    
     
-    private void loginPOST(String usuario, String password){
+    private void loginPOST(String usuario, String password, String PKHash){
         // create your json here
         JSONObject jsonObject = new JSONObject();
         try {
@@ -297,6 +306,7 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
+               FRAME_menuUsuario.setUSER_PK(PKHash);
                this.setVisible(false);
            }else{
                String error = json_response.getString("error");

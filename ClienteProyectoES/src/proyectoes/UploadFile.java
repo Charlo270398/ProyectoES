@@ -201,9 +201,16 @@ public class UploadFile extends javax.swing.JFrame {
         if(selectedFile != null){
             try {
                 Fichero fichero = new Fichero (selectedFile);
+                fichero.setCopia_diaria(jCheckBoxDiaria.isSelected());
+                fichero.setCopia_semanal(jCheckBoxSemanal.isSelected());
+                fichero.setCopia_mensual(jCheckBoxMensual.isSelected());
                 fichero.subirFicheroPOST(MenuUsuario.USUARIO);
+                //Reiniciamos los valores
                 selectedFile = null;
                 jLabelFichero.setText("Fichero sin seleccionar");
+                jCheckBoxDiaria.setSelected(false);
+                jCheckBoxSemanal.setSelected(false);
+                jCheckBoxMensual.setSelected(false);
                 this.hide();
                 FRAME_menuUsuario.setVisible(true);
             } catch (IOException ex) {

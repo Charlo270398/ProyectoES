@@ -24,6 +24,15 @@ public class MenuUsuario extends javax.swing.JFrame {
     public static ListarFicheros FRAME_listarFicheros = null;
     public static String USUARIO = null;
     public static String USER_ID = null;
+    public static String USER_PK  = null;
+
+    public static String getUSER_PK() {
+        return USER_PK;
+    }
+
+    public static void setUSER_PK(String USER_PK) {
+        MenuUsuario.USER_PK = USER_PK;
+    }
 
     public static String getUSUARIO() {
         return USUARIO;

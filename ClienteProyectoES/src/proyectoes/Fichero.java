@@ -38,6 +38,19 @@ public class Fichero {
     File fichero = null;
     String SOURCE_FOLDER;
     private ArrayList <String> fileList;
+    boolean copia_diaria = false, copia_semanal = false, copia_mensual = false;
+
+    public void setCopia_diaria(boolean copia_diaria) {
+        this.copia_diaria = copia_diaria;
+    }
+
+    public void setCopia_semanal(boolean copia_semanal) {
+        this.copia_semanal = copia_semanal;
+    }
+
+    public void setCopia_mensual(boolean copia_mensual) {
+        this.copia_mensual = copia_mensual;
+    }
     
     public Fichero(){
         
@@ -246,6 +259,9 @@ public class Fichero {
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)
+                .addFormDataPart("copia_diaria", String.valueOf(copia_diaria))
+                .addFormDataPart("copia_semanal", String.valueOf(copia_semanal))
+                .addFormDataPart("copia_mensual", String.valueOf(copia_mensual))
                 .addFormDataPart("file1", fichero.getName(), RequestBody.create(MediaType.parse("zip"), cifradoTEMP))
                 .build();
         
@@ -260,7 +276,7 @@ public class Fichero {
             JSONObject json_response = new JSONObject(new String(responseBody));
             String result = json_response.getString("result");
 
-            //Resultado de la peticióm
+            //Resultado de la petición
             if(result.equals("OK")){
                 System.out.println(result);
                 TEMP.delete();//Borramos el zip temporal
