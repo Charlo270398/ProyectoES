@@ -41,6 +41,7 @@ import static proyectoes.MenuUsuario.USUARIO;
  */
 public class Fichero {
     File fichero = null;
+    private String[] PERMITIDOS_listaUsuarios;
     String SOURCE_FOLDER;
     private ArrayList <String> fileList;
     boolean copia_diaria = false, copia_semanal = false, copia_mensual = false;
@@ -61,11 +62,55 @@ public class Fichero {
         
     }
     
-    public Fichero(File fichero){
+    public Fichero(File fichero, String[] PERMITIDOS_listaUsuarios){
         this.fichero = fichero;
+        this.PERMITIDOS_listaUsuarios = PERMITIDOS_listaUsuarios;
         if(fichero.isDirectory()){
             SOURCE_FOLDER = fichero.getAbsolutePath();
             fileList = new ArrayList();
+        }
+    }
+    
+    private void compartirFichero(String propietario, String AES_KEY, String nombreFichero){
+        
+        for(int i=0; i<PERMITIDOS_listaUsuarios.length; i++){
+            //Obtenemos clave publica del usuario
+            Seguridad.descargarClavePublicaRSA(PERMITIDOS_listaUsuarios[i]);
+            //Ciframos con RSA la clave AES aleatoria
+            String clave_AES_CIFRADA = Seguridad.cifrarConRSA(AES_KEY);
+            //Petición POST
+            OkHttpClient client = new OkHttpClient();
+            String url = "http://"+IP+":"+PORT+"/añadirCompartido";
+            RequestBody body = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("propietario", propietario)
+                    .addFormDataPart("compartido", PERMITIDOS_listaUsuarios[i])
+                    .addFormDataPart("nombre", nombreFichero)
+                    .addFormDataPart("clave", clave_AES_CIFRADA)
+                    .build();
+        
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .build();
+            Response response = null;
+            try {
+                response = client.newCall(request).execute();
+                byte[] responseBody = response.body().bytes();
+                JSONObject json_response = new JSONObject(new String(responseBody));
+                String result = json_response.getString("result");
+                //Resultado de la petición
+                if(result.equals("OK")){
+                    Seguridad.descargarClavePublicaRSA(USUARIO);
+                }else{
+                    String error = json_response.getString("error");
+                    System.out.println(error);
+                }
+            } catch (IOException ex) {
+                System.out.println(ex.toString());
+            } catch (JSONException ex) { 
+                System.out.println(ex.toString());
+            } 
         }
     }
     
@@ -225,7 +270,57 @@ public class Fichero {
                 Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
                 
                 //Descomprimimos ZIP
-                extractZip(filename + ".zip", new File(USUARIO + "_DESCARGAS"));
+                extractZip(filename + ".zip", new File(USUARIO + "_MIS_FICHEROS"));
+                //Borramos fichero cifrado, el ZIP y la clave privada descifrada
+                cifradoTEMP.delete();
+                File zip = new File(filename + ".zip");
+                zip.delete();
+                File pkdescifrada = new File("private.key");
+                pkdescifrada.delete();
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+        }catch(Exception e){
+            System.out.println(e);
+        }
+    }
+    
+    public void getFicheroCompartidoGET(String ficheroId){
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://"+IP+":"+PORT+"/obtenerFicheroCompartido?ficheroCompartidoId="+ficheroId;
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+        try{
+            Response response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            try {
+                JSONObject json_response=new JSONObject(new String(responseBody));
+                JSONObject data = (JSONObject) json_response.get("data");
+                String filename = (String) json_response.get("filename");
+                String clave_AES_CIFRADA = (String) json_response.get("clave");
+                JSONArray bytearray_json = (JSONArray) data.get("data");
+                byte[] bytes = new byte[bytearray_json.length()];
+                for (int i =0; i < bytearray_json.length(); i++ ) {
+                    bytes[i] = (byte)(int)bytearray_json.get(i);
+                }
+                
+                //Obtenemos fichero cifrado con AES
+                File cifradoTEMP = new File(filename);
+                OutputStream os = new FileOutputStream(cifradoTEMP);
+                os.write(bytes);
+                os.close();
+                
+                //Desciframos la clave AES con la clave privada
+                Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
+                String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
+                
+                //Desciframos el fichero
+                Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
+                
+                //Descomprimimos ZIP
+                extractZip(filename + ".zip", new File(USUARIO + "_COMPARTIDOS_CONMIGO"));
                 //Borramos fichero cifrado, el ZIP y la clave privada descifrada
                 cifradoTEMP.delete();
                 File zip = new File(filename + ".zip");
@@ -295,7 +390,7 @@ public class Fichero {
 
             //Resultado de la petición
             if(result.equals("OK")){
-                System.out.println(result);
+                compartirFichero(usuario, new String(base64Cipher), fichero.getName());
                 TEMP.delete();//Borramos el zip temporal
                 cifradoTEMP.delete();//Borramos el cifrado temporal
             }else{
