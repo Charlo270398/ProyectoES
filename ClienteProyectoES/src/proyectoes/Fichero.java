@@ -136,7 +136,7 @@ public class Fichero {
             zos.close();
             fis.close();
             fos.close();
-            System.out.println(file.getCanonicalPath()+" is zipped to "+zipFileName);
+            //System.out.println(file.getCanonicalPath()+" is zipped to "+zipFileName);
             
         } catch (IOException e) {
             e.printStackTrace();
@@ -170,7 +170,7 @@ public class Fichero {
             }
 
             zos.closeEntry();
-            System.out.println("Folder successfully compressed");
+            //System.out.println("Folder successfully compressed");
 
         } catch (IOException ex) {
             ex.printStackTrace();
