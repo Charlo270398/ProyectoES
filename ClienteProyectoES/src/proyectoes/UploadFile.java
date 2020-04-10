@@ -25,11 +25,12 @@ public class UploadFile extends javax.swing.JFrame {
      */
     public UploadFile() {
         initComponents();
+        FRAME_CompartirFichero = new CompartirFichero();
     }
     
     File selectedFile = null;
     CompartirFichero FRAME_CompartirFichero = null;
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -114,10 +115,13 @@ public class UploadFile extends javax.swing.JFrame {
         jLabelPolitica.setForeground(new java.awt.Color(255, 255, 255));
         jLabelPolitica.setText("Política de copias");
 
+        jCheckBoxDiaria.setForeground(new java.awt.Color(255, 255, 255));
         jCheckBoxDiaria.setText("Diaria");
 
+        jCheckBoxSemanal.setForeground(new java.awt.Color(255, 255, 255));
         jCheckBoxSemanal.setText("Semanal");
 
+        jCheckBoxMensual.setForeground(new java.awt.Color(255, 255, 255));
         jCheckBoxMensual.setText("Mensual");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -203,7 +207,7 @@ public class UploadFile extends javax.swing.JFrame {
     private void jButtonAñadirArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAñadirArchivoActionPerformed
         if(selectedFile != null){
             try {
-                Fichero fichero = new Fichero (selectedFile);
+                Fichero fichero = new Fichero (selectedFile, FRAME_CompartirFichero.getPERMITIDOS_listaUsuariosNombre());
                 fichero.setCopia_diaria(jCheckBoxDiaria.isSelected());
                 fichero.setCopia_semanal(jCheckBoxSemanal.isSelected());
                 fichero.setCopia_mensual(jCheckBoxMensual.isSelected());
@@ -236,7 +240,6 @@ public class UploadFile extends javax.swing.JFrame {
 
     private void jButtonCompartirArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCompartirArchivoActionPerformed
         // TODO add your handling code here:
-        FRAME_CompartirFichero = new CompartirFichero();
         FRAME_CompartirFichero.setVisible(true);
         this.hide();
     }//GEN-LAST:event_jButtonCompartirArchivoActionPerformed

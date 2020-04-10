@@ -199,6 +199,24 @@ app.post('/subirFichero', async (req,res) => {
   }
 });
 
+app.post('/añadirCompartido', async (req,res) => {
+    const propietario = req.body.propietario;
+    const compartido = req.body.compartido;
+    const nombre = req.body.nombre;
+    const clave = req.body.clave;
+    const fileRoute =  "uploadedFiles/" + propietario + "/" + nombre;
+    //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
+    try{
+      var fila = {propietario: propietario, compartido: compartido, rutaFichero: fileRoute, nombreFichero: nombre,  claveCompartida: clave};
+      await knex('comparticion_ficheros').insert(fila);
+      res.status(200).send({result:"OK", error: null});
+    }catch(err){
+        console.log(err);
+        res.status(404).send({result:"ERROR", error: err});
+        return;
+    }
+});
+
 app.get('/obtenerListaFicheros', async (req,res) => {
     try{
       const userId = req.query.userId;
@@ -231,6 +249,29 @@ app.get('/obtenerFichero', async (req,res) => {
           return; 
         }
         res.status(200).send({data:data, filename: rutaFichero.nombre, clave: rutaFichero.clave});
+      });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/obtenerFicheroCompartido', async (req,res) => {
+  //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LAS RUTAS DEL MISMO ETC, LUEGO DEVOLVERLAS
+  try{
+    const ficheroCompartidoId = req.query.ficheroCompartidoId;
+    const file = await knex('comparticion_ficheros').select('rutaFichero','nombreFichero','claveCompartida').where('ficheroCompartido_id',ficheroCompartidoId).first();
+    if (fs.existsSync(file.rutaFichero)) {
+      fs.readFile(file.rutaFichero, function (err, data) {
+        if (err) {
+          res.status(404).send({result:null, error: err});
+          return; 
+        }
+        res.status(200).send({data:data, filename: file.nombreFichero, clave: file.claveCompartida});
       });
     }else{
       res.status(404).send({result:null, error: err});
@@ -291,7 +332,7 @@ app.get('/obtenerClavePrivada', async (req,res) => {
 app.get('/compartidos/otros', async (req,res) => {
   try{
     const usuarioId = req.query.userId;
-    const listaFicherosCompartidos = await knex('comparticion_ficheros').select('ficheroCompartido_id','nombreFichero').where('compartidoId',usuarioId);
+    const listaFicherosCompartidos = await knex('comparticion_ficheros').select('ficheroCompartido_id','nombreFichero').where('compartido',usuarioId);
     res.status(200).send({result:listaFicherosCompartidos});
   }catch(err){
     console.log(err);
@@ -314,7 +355,8 @@ app.get('/compartidos/propios', async (req,res) => {
 
 app.get('/usuarios/lista', async (req,res) => {
   try{
-    const listaUsuarios = await knex('usuarios').select('usuario_id','usuario');
+    const usuarioId = req.query.userId;
+    const listaUsuarios = await knex('usuarios').select('usuario_id','usuario').whereNot('usuario_id', usuarioId);
     res.status(200).send({result:listaUsuarios});
   }catch(err){
     console.log(err);
