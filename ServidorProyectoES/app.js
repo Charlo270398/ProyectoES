@@ -49,6 +49,10 @@ async function creaEsquema(res) {
         tabla.string('ruta').unique();
         tabla.string('propietario', 50);
         tabla.datetime('fecha_modificacion');
+        tabla.boolean('copia_diaria');
+        tabla.boolean('copia_semanal');
+        tabla.boolean('copia_mensual');
+        tabla.string('clave');
       });
       console.log("Se ha creado la tabla ficheros");
     }
@@ -56,11 +60,12 @@ async function creaEsquema(res) {
     if (!existeTabla) {
       await knex.schema.createTable('comparticion_ficheros', (tabla) => {
         tabla.increments('ficheroCompartido_id').primary();
-        tabla.integer('propietarioId');
-        tabla.integer('compartidoId');
+        tabla.integer('propietario');
+        tabla.integer('compartido');
         tabla.string('rutaFichero');
         tabla.string('nombreFichero');
-        tabla.unique(['propietarioId', 'compartidoId', 'rutaFichero']);
+        tabla.string('claveCompartida');
+        tabla.unique(['propietario', 'compartido', 'rutaFichero']);
       });
       console.log("Se ha creado la tabla comparticion_ficheros");
     }
@@ -129,23 +134,47 @@ app.post('/registrarse', async (req,res) => {
     const usuario = req.body.usuario;
     const password = req.body.password;
     const passwordData = hash.saltHashPassword(password);
+    const publicKey = req.files.publicKey;
+    const privateKey = req.files.privateKey;
+    const keysRoute = "usersKeys/"+usuario + "/";
     var fila = {usuario: usuario, password: passwordData.passwordHash, salt: passwordData.salt};
     const user_id = await knex('usuarios').insert(fila);
+    if (!fs.existsSync(keysRoute)) {
+      fs.mkdirSync(keysRoute);
+    }
+    publicKey.mv(keysRoute + publicKey.name, function(err){
+      if(err){
+        console.log(err);
+        res.status(404).send({result:"ERROR", error: err});
+        return;
+      }
+    });
+    privateKey.mv(keysRoute + privateKey.name, function(err){
+      if(err){
+        console.log(err);
+        res.status(404).send({result:"ERROR", error: err});
+        return;
+      }
+    });
     res.status(200).send({result:"OK", userId: user_id[0], error: null});
   }catch (err) {
     console.log(err);
-    res.status(404).send({result:null, error: err});
+    res.status(404).send({result:"ERROR", error: err.toString()});
     return;
   }
 });
 
 app.post('/subirFichero', async (req,res) => {
   if(req.files){
-    var file = req.files.file1;
-    var user = req.body.usuario;
-    var filename = file.name;
+    const file = req.files.file1;
+    const user = req.body.usuario;
+    const copia_diaria = req.body.copia_diaria;
+    const copia_semanal = req.body.copia_semanal;
+    const copia_mensual = req.body.copia_mensual;
+    const filename = file.name;
     const folderRoute =  "uploadedFiles/" + user;
     const fileRoute =  folderRoute + "/" + filename;
+    const clave = req.body.clave;
     if (!fs.existsSync(folderRoute)) {
       fs.mkdirSync(folderRoute);
     }
@@ -158,7 +187,8 @@ app.post('/subirFichero', async (req,res) => {
     });
     //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     try{
-      var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss")};
+      var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
+                  copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
       await knex('ficheros').insert(fila);
       res.status(200).send({result:"OK", error: null});
     }catch(err){
@@ -167,6 +197,24 @@ app.post('/subirFichero', async (req,res) => {
         return;
     }
   }
+});
+
+app.post('/añadirCompartido', async (req,res) => {
+    const propietario = req.body.propietario;
+    const compartido = req.body.compartido;
+    const nombre = req.body.nombre;
+    const clave = req.body.clave;
+    const fileRoute =  "uploadedFiles/" + propietario + "/" + nombre;
+    //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
+    try{
+      var fila = {propietario: propietario, compartido: compartido, rutaFichero: fileRoute, nombreFichero: nombre,  claveCompartida: clave};
+      await knex('comparticion_ficheros').insert(fila);
+      res.status(200).send({result:"OK", error: null});
+    }catch(err){
+        console.log(err);
+        res.status(404).send({result:"ERROR", error: err});
+        return;
+    }
 });
 
 app.get('/obtenerListaFicheros', async (req,res) => {
@@ -193,14 +241,83 @@ app.get('/obtenerFichero', async (req,res) => {
   //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LAS RUTAS DEL MISMO ETC, LUEGO DEVOLVERLAS
   try{
     const ficheroId = req.query.ficheroId;
-    const rutaFichero = await knex('ficheros').select('ruta','nombre').where('fichero_id',ficheroId).first();
+    const rutaFichero = await knex('ficheros').select('ruta','nombre','clave').where('fichero_id',ficheroId).first();
     if (fs.existsSync(rutaFichero.ruta)) {
       fs.readFile( rutaFichero.ruta, function (err, data) {
         if (err) {
           res.status(404).send({result:null, error: err});
           return; 
         }
-        res.status(200).send({data:data, filename: rutaFichero.nombre});
+        res.status(200).send({data:data, filename: rutaFichero.nombre, clave: rutaFichero.clave});
+      });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/obtenerFicheroCompartido', async (req,res) => {
+  //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LAS RUTAS DEL MISMO ETC, LUEGO DEVOLVERLAS
+  try{
+    const ficheroCompartidoId = req.query.ficheroCompartidoId;
+    const file = await knex('comparticion_ficheros').select('rutaFichero','nombreFichero','claveCompartida').where('ficheroCompartido_id',ficheroCompartidoId).first();
+    if (fs.existsSync(file.rutaFichero)) {
+      fs.readFile(file.rutaFichero, function (err, data) {
+        if (err) {
+          res.status(404).send({result:null, error: err});
+          return; 
+        }
+        res.status(200).send({data:data, filename: file.nombreFichero, clave: file.claveCompartida});
+      });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/obtenerClavePublica', async (req,res) => {
+  //PASAR COMO ARGUMENTO NOMBRE DEL USUARIO
+  try{
+    const usuario = req.query.usuario;
+    const rutaClavePublica = "usersKeys/"+usuario + "/publicKey_" + usuario;
+    if (fs.existsSync(rutaClavePublica)) {
+      fs.readFile( rutaClavePublica, function (err, data) {
+        if (err) {
+          res.status(404).send({result:null, error: err});
+          return; 
+        }
+        res.status(200).send({data:data, filename: "publicKey_" + usuario});
+      });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/obtenerClavePrivada', async (req,res) => {
+  //PASAR COMO ARGUMENTO NOMBRE DEL USUARIO
+  try{
+    const usuario = req.query.usuario;
+    const rutaClavePrivada = "usersKeys/"+usuario + "/privateKey_" + usuario;
+    if (fs.existsSync(rutaClavePrivada)) {
+      fs.readFile( rutaClavePrivada, function (err, data) {
+        if (err) {
+          res.status(404).send({result:null, error: err});
+          return; 
+        }
+        res.status(200).send({data:data, filename: "privateKey_" + usuario});
       });
     }else{
       res.status(404).send({result:null, error: err});
@@ -215,7 +332,7 @@ app.get('/obtenerFichero', async (req,res) => {
 app.get('/compartidos/otros', async (req,res) => {
   try{
     const usuarioId = req.query.userId;
-    const listaFicherosCompartidos = await knex('comparticion_ficheros').select('ficheroCompartido_id','nombreFichero').where('compartidoId',usuarioId);
+    const listaFicherosCompartidos = await knex('comparticion_ficheros').select('ficheroCompartido_id','nombreFichero').where('compartido',usuarioId);
     res.status(200).send({result:listaFicherosCompartidos});
   }catch(err){
     console.log(err);
@@ -238,7 +355,8 @@ app.get('/compartidos/propios', async (req,res) => {
 
 app.get('/usuarios/lista', async (req,res) => {
   try{
-    const listaUsuarios = await knex('usuarios').select('usuario_id','usuario');
+    const usuarioId = req.query.userId;
+    const listaUsuarios = await knex('usuarios').select('usuario_id','usuario').whereNot('usuario_id', usuarioId);
     res.status(200).send({result:listaUsuarios});
   }catch(err){
     console.log(err);
@@ -275,6 +393,9 @@ app.listen(PORT, function () {
   //SI NO EXISTE LA CARPETA DE LOS FICHEROS LA CREAMOS
   if (!fs.existsSync("uploadedFiles")) {
     fs.mkdirSync("uploadedFiles");
+  }
+  if (!fs.existsSync("usersKeys")) {
+    fs.mkdirSync("usersKeys");
   }
   console.log(`Aplicación lanzada en el puerto ${ PORT }!`);
 });

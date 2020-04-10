@@ -13,6 +13,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import static proyectoes.Login.FRAME_menuUsuario;
 import static proyectoes.MenuUsuario.FRAME_uploadFile;
+import static proyectoes.MenuUsuario.USER_ID;
+import static proyectoes.MenuUsuario.USUARIO;
 
 /**
  *
@@ -21,6 +23,10 @@ import static proyectoes.MenuUsuario.FRAME_uploadFile;
 public class CompartirFichero extends javax.swing.JFrame {
     
     private String[] PERMITIDOS_listaUsuariosNombre = new String[0], PERMITIDOS_listaUsuariosId = new String[0];
+
+    public String[] getPERMITIDOS_listaUsuariosNombre() {
+        return PERMITIDOS_listaUsuariosNombre;
+    }
     private String[] DENEGADOS_listaUsuariosNombre, DENEGADOS_listaUsuariosId;
     /**
      * Creates new form Compartir
@@ -37,7 +43,7 @@ public class CompartirFichero extends javax.swing.JFrame {
     
     public void getListaFicherosGET(){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:5000/usuarios/lista";
+        String url = "http://localhost:5000/usuarios/lista?userId=" + USER_ID;
         Request request = new Request.Builder()
                 .url(url)
                 .get()

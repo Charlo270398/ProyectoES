@@ -6,18 +6,14 @@
 package proyectoes;
 
 import java.awt.Color;
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -32,6 +28,8 @@ import org.json.JSONObject;
 public class Login extends javax.swing.JFrame {
     
     public static MenuUsuario FRAME_menuUsuario = new MenuUsuario();
+    public static String IP = "localhost";
+    public static String PORT = "5000";
     
     /**
      * Creates new form Login
@@ -193,7 +191,11 @@ public class Login extends javax.swing.JFrame {
         {
             jLabelError.setText("Existen campos vacíos");
         }else{
-            loginPOST(usuario, s.getSHA512(password));
+            String hash = s.getSHA512(password);
+            //Mitad login, mitad clave privada
+            String loginHash = hash.substring(0, hash.length()/2);
+            String AESHash = hash.substring(hash.length()/2);
+            loginPOST(usuario, loginHash, AESHash);
         }
     }//GEN-LAST:event_jButtonLoginActionPerformed
 
@@ -213,7 +215,11 @@ public class Login extends javax.swing.JFrame {
         }else{
             //Comprobar contraseña segura
             if(comprobarPasswordSegura(password)){
-                registrarsePOST(usuario, s.getSHA512(password));
+                String hash = s.getSHA512(password);
+                //Mitad login, mitad clave privada
+                String loginHash = hash.substring(0, hash.length()/2);
+                String AESHash = hash.substring(hash.length()/2);
+                registrarsePOST(usuario, loginHash, AESHash);
             }
         }
     }//GEN-LAST:event_jButtonRegistroActionPerformed
@@ -222,24 +228,33 @@ public class Login extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldPasswordActionPerformed
 
-    private void registrarsePOST(String usuario, String password){
-        // create your json here
-        JSONObject jsonObject = new JSONObject();
-        try {
-            jsonObject.put("usuario", usuario);
-            jsonObject.put("password", password);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+    private void registrarsePOST(String usuario, String password, String AESHash){
+ 
+       //Generamos el par de claves RSA
+       Seguridad.generarClavesRSA();
+       //La ciframos con nuestra clave AES
+       Seguridad.cifrarClavePrivadaRSA(usuario,AESHash);
+       
+       //Cargamos claves publica y privada
+       File pub_key = new File("public.key");
+       File priv_key = new File("privateKey_" + usuario);
+       
        OkHttpClient client = new OkHttpClient();
        MediaType JSON = MediaType.parse("application/json; charset=utf-8");
        // put your json here
-       RequestBody body = RequestBody.create(JSON, jsonObject.toString());
+
+       RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("usuario", usuario)
+                .addFormDataPart("password", password)
+                .addFormDataPart("publicKey", "publicKey_" + usuario, RequestBody.create(MediaType.parse("key"), pub_key))
+                .addFormDataPart("privateKey", "privateKey_" + usuario, RequestBody.create(MediaType.parse("key"), priv_key))
+                .build();
+        
        Request request = new Request.Builder()
-                         .url("http://localhost:5000/registrarse")
-                         .post(body)
-                         .build();
+                .url("http://"+IP+":"+PORT+"/registrarse")
+                .post(body)
+                .build();
 
        Response response = null;
        try {
@@ -255,7 +270,11 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
+               FRAME_menuUsuario.setUSER_PK(AESHash);
+               pub_key.deleteOnExit();
+               priv_key.delete();
                this.setVisible(false);
+               
            }else{
                String error = json_response.getString("error");
                jLabelError.setText(error);
@@ -268,7 +287,7 @@ public class Login extends javax.swing.JFrame {
        }
     }    
     
-    private void loginPOST(String usuario, String password){
+    private void loginPOST(String usuario, String password, String AES_Hash){
         // create your json here
         JSONObject jsonObject = new JSONObject();
         try {
@@ -283,7 +302,7 @@ public class Login extends javax.swing.JFrame {
        // put your json here
        RequestBody body = RequestBody.create(JSON, jsonObject.toString());
        Request request = new Request.Builder()
-                         .url("http://localhost:5000/login")
+                         .url("http://"+IP+":"+PORT+"/login")
                          .post(body)
                          .build();
 
@@ -301,6 +320,8 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
+               FRAME_menuUsuario.setUSER_PK(AES_Hash);
+               Seguridad.descargarClavePublicaRSA(usuario);
                this.setVisible(false);
            }else{
                String error = json_response.getString("error");
