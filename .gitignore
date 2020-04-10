@@ -1,6 +1,7 @@
 ServidorProyectoES/node_modules/
 *.sqlite
 ServidorProyectoES/uploadedFiles/
+ServidorProyectoES/userKeys/
 ClienteProyectoES/build/
 ClienteProyectoES/build/built-jar.properties
 *.properties
