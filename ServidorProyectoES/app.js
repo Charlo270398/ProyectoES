@@ -60,6 +60,7 @@ async function creaEsquema(res) {
     if (!existeTabla) {
       await knex.schema.createTable('comparticion_ficheros', (tabla) => {
         tabla.increments('ficheroCompartido_id').primary();
+        tabla.integer('fichero_id');
         tabla.integer('propietario');
         tabla.integer('compartido');
         tabla.string('rutaFichero');
@@ -189,8 +190,8 @@ app.post('/subirFichero', async (req,res) => {
     try{
       var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
                   copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
-      await knex('ficheros').insert(fila);
-      res.status(200).send({result:"OK", error: null});
+      const ficheroId = await knex('ficheros').insert(fila);
+      res.status(200).send({result:"OK", ficheroId: ficheroId[0], error: null});
     }catch(err){
         console.log(err);
         res.status(404).send({result:"ERROR", error: err});
@@ -200,6 +201,7 @@ app.post('/subirFichero', async (req,res) => {
 });
 
 app.post('/añadirCompartido', async (req,res) => {
+    const ficheroId = req.body.ficheroId; 
     const propietario = req.body.propietario;
     const compartido = req.body.compartido;
     const nombre = req.body.nombre;
@@ -207,7 +209,7 @@ app.post('/añadirCompartido', async (req,res) => {
     const fileRoute =  "uploadedFiles/" + propietario + "/" + nombre;
     //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     try{
-      var fila = {propietario: propietario, compartido: compartido, rutaFichero: fileRoute, nombreFichero: nombre,  claveCompartida: clave};
+      var fila = {fichero_id: ficheroId, propietario: propietario, compartido: compartido, rutaFichero: fileRoute, nombreFichero: nombre,  claveCompartida: clave};
       await knex('comparticion_ficheros').insert(fila);
       res.status(200).send({result:"OK", error: null});
     }catch(err){

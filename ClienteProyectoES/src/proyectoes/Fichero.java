@@ -71,7 +71,7 @@ public class Fichero {
         }
     }
     
-    private void compartirFichero(String propietario, String AES_KEY, String nombreFichero){
+    private void compartirFichero(String ficheroId, String propietario, String AES_KEY, String nombreFichero){
         
         for(int i=0; i<PERMITIDOS_listaUsuarios.length; i++){
             //Obtenemos clave publica del usuario
@@ -83,6 +83,7 @@ public class Fichero {
             String url = "http://"+IP+":"+PORT+"/añadirCompartido";
             RequestBody body = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
+                    .addFormDataPart("ficheroId", ficheroId)
                     .addFormDataPart("propietario", propietario)
                     .addFormDataPart("compartido", PERMITIDOS_listaUsuarios[i])
                     .addFormDataPart("nombre", nombreFichero)
@@ -390,7 +391,8 @@ public class Fichero {
 
             //Resultado de la petición
             if(result.equals("OK")){
-                compartirFichero(usuario, new String(base64Cipher), fichero.getName());
+                String ficheroId = String.valueOf(json_response.getInt("ficheroId"));
+                compartirFichero(ficheroId, usuario, new String(base64Cipher), fichero.getName());
                 TEMP.delete();//Borramos el zip temporal
                 cifradoTEMP.delete();//Borramos el cifrado temporal
             }else{
