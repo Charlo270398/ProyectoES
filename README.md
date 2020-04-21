@@ -5,6 +5,7 @@ programación de copias de seguridad de los ficheros almacenados.
 El proyecto está compuesto por un cliente Java y servidor Node.js. 
 
 ## Cliente Java
+keytool -import -file "RUTACERTIFICADO" -keystore "C:\Program Files\Java\jdk1.8.0_191\jre\lib\security/cacerts" -alias "ESproyect"
 Para ejecutarlo simplemente importar en NetBeans con la versión JDK apropiada. 
 
 ## Servidor Node

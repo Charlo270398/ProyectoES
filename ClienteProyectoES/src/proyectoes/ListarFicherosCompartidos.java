@@ -38,7 +38,7 @@ public class ListarFicherosCompartidos extends javax.swing.JFrame {
     
     public void getListaFicherosGET(){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/compartidos/otros?userId=" + MenuUsuario.USUARIO;
+        String url = "https://"+IP+":"+PORT+"/compartidos/otros?userId=" + MenuUsuario.USUARIO;
         Request request = new Request.Builder()
                 .url(url)
                 .get()

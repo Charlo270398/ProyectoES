@@ -1,5 +1,5 @@
 'use strict';
-
+const https = require('https');
 var express = require('express');
 var hash = require('./hash.js');
 var bodyParser = require('body-parser');
@@ -103,7 +103,7 @@ app.use( async (req, res, next) => {
 });
 
 app.get('/', function (req, res) {
-  res.send('Hello World!');
+  res.send('Hello Https funciona!');
 });
 
 app.post('/login', async (req,res) => {
@@ -389,9 +389,14 @@ app.delete('/borrarFichero', async (req,res) => {
 });
 
 
-const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, function () {
+
+const PORT = process.env.PORT || 5000;
+https.createServer({
+  key: fs.readFileSync('server.key'),
+  cert: fs.readFileSync('server.cert')
+},
+app).listen(PORT, function () {
   //SI NO EXISTE LA CARPETA DE LOS FICHEROS LA CREAMOS
   if (!fs.existsSync("uploadedFiles")) {
     fs.mkdirSync("uploadedFiles");

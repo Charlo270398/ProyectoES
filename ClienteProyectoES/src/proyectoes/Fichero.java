@@ -80,7 +80,7 @@ public class Fichero {
             String clave_AES_CIFRADA = Seguridad.cifrarConRSA(AES_KEY);
             //Petición POST
             OkHttpClient client = new OkHttpClient();
-            String url = "http://"+IP+":"+PORT+"/añadirCompartido";
+            String url = "https://"+IP+":"+PORT+"/añadirCompartido";
             RequestBody body = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("ficheroId", ficheroId)
@@ -238,7 +238,7 @@ public class Fichero {
     
     public void getFicheroGET(String ficheroId){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
+        String url = "https://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -288,7 +288,7 @@ public class Fichero {
     
     public void getFicheroCompartidoGET(String ficheroId){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/obtenerFicheroCompartido?ficheroCompartidoId="+ficheroId;
+        String url = "https://"+IP+":"+PORT+"/obtenerFicheroCompartido?ficheroCompartidoId="+ficheroId;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -367,7 +367,7 @@ public class Fichero {
         //Ciframos con RSA la clave AES aleatoria
         String clave_AES_CIFRADA = Seguridad.cifrarConRSA(new String(base64Cipher));
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/subirFichero";
+        String url = "https://"+IP+":"+PORT+"/subirFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)
@@ -407,7 +407,7 @@ public class Fichero {
     }
      public void borrarFichero(String usuario, String ficheroId, String ficheroNombre) throws FileNotFoundException, IOException{
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/borrarFichero";
+        String url = "https://"+IP+":"+PORT+"/borrarFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)

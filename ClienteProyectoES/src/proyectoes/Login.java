@@ -252,7 +252,7 @@ public class Login extends javax.swing.JFrame {
                 .build();
         
        Request request = new Request.Builder()
-                .url("http://"+IP+":"+PORT+"/registrarse")
+                .url("https://"+IP+":"+PORT+"/registrarse")
                 .post(body)
                 .build();
 
@@ -302,7 +302,7 @@ public class Login extends javax.swing.JFrame {
        // put your json here
        RequestBody body = RequestBody.create(JSON, jsonObject.toString());
        Request request = new Request.Builder()
-                         .url("http://"+IP+":"+PORT+"/login")
+                         .url("https://"+IP+":"+PORT+"/login")
                          .post(body)
                          .build();
 

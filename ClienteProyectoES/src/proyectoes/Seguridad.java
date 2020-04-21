@@ -134,7 +134,7 @@ public class Seguridad {
     
     public static void descargarClavePublicaRSA(String usuario){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/obtenerClavePublica?usuario="+usuario;
+        String url = "https://"+IP+":"+PORT+"/obtenerClavePublica?usuario="+usuario;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -170,7 +170,7 @@ public class Seguridad {
     
     private static void descargarClavePrivadaRSA(String usuario, String AES_KEY, String KEYNAME){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://"+IP+":"+PORT+"/obtenerClavePrivada?usuario="+usuario;
+        String url = "https://"+IP+":"+PORT+"/obtenerClavePrivada?usuario="+usuario;
         Request request = new Request.Builder()
                 .url(url)
                 .get()

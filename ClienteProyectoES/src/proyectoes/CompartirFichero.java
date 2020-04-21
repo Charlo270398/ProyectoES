@@ -43,7 +43,7 @@ public class CompartirFichero extends javax.swing.JFrame {
     
     public void getListaFicherosGET(){
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:5000/usuarios/lista?userId=" + USER_ID;
+        String url = "https://localhost:5000/usuarios/lista?userId=" + USER_ID;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
