@@ -8,6 +8,8 @@ El proyecto está compuesto por un cliente Java y servidor Node.js.
 keytool -import -file "RUTACERTIFICADO" -keystore "C:\Program Files\Java\jdk1.8.0_191\jre\lib\security/cacerts" -alias "ESproyect"
 Para ejecutarlo simplemente importar en NetBeans con la versión JDK apropiada. 
 
+SI ESO NO VA cambiar el fichero "cacerts" de "C:\Program Files\Java\jdk1.8.0_191\jre\lib\security/cacerts" por el cacerts que encontramos en la carpeta certificadoServer del cliente. 
+
 ## Servidor Node
 Para ejecutarlo se debe tener instalado Node previamente. Una vez instalado situarse en la carpeta raiz del
 servidor y ejecutar "npm start".
