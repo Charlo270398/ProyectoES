@@ -13,6 +13,7 @@
     "express": "^4.16.3",
     "express-fileupload": "1.1.6",
     "google-auth-library": "^5.6.1",
+    "googleapis": "^39.2.0",
     "https": "^1.0.0",
     "ipware": "^2.0.0",
     "knex": "^0.20.1",
