@@ -175,6 +175,8 @@ app.post('/registrarse', async (req,res) => {
   }
 });
 
+var filenameGLOBAL, filerouteGLOBAL;
+
 app.post('/subirFichero', async (req,res) => {
   if(req.files){
     const file = req.files.file1;
@@ -186,6 +188,8 @@ app.post('/subirFichero', async (req,res) => {
     const folderRoute =  "uploadedFiles/" + user;
     const fileRoute =  folderRoute + "/" + filename;
     const clave = req.body.clave;
+    filenameGLOBAL = filename;
+    filerouteGLOBAL = fileRoute;
     if (!fs.existsSync(folderRoute)) {
       fs.mkdirSync(folderRoute);
     }
@@ -201,14 +205,11 @@ app.post('/subirFichero', async (req,res) => {
       var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
                   copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
       const ficheroId = await knex('ficheros').insert(fila);
-      // Load client secrets from a local file.***************************
       fs.readFile('credentials.json', (err,   content) => {
         if (err) return console.log('Error loading client secret file:', err);
         // Authorize a client with credentials, then call the Google Drive API.
-        
-        
         authorize(JSON.parse(content), uploadFile);
-        authorize(JSON.parse(content), getFile);
+        //authorize(JSON.parse(content), getFile);
         //authorize(JSON.parse(content), listFiles);
       });
 
@@ -466,7 +467,6 @@ function authorize(credentials, callback) {
         oAuth2Client.setCredentials(JSON.parse(token));
         callback(oAuth2Client);//list files and upload file
         //callback(oAuth2Client, '0B79LZPgLDaqESF9HV2V3YzYySkE');//get file
-
     });
 }
 
@@ -541,11 +541,11 @@ function processList(files) {
 function uploadFile(auth) {
     const drive = google.drive({ version: 'v3', auth });
     var fileMetadata = {
-        'name': 'test22.jpg'
+        'name': filenameGLOBAL
     };
     var media = {
         //mimeType: 'image/jpeg',
-        body: fs.createReadStream('test22.jpg')
+        body: fs.createReadStream(filerouteGLOBAL)
     };
     drive.files.create({
         resource: fileMetadata,
@@ -574,12 +574,10 @@ function uploadFile(auth) {
         }
     });
 }
+
 function getFile(auth, fileId) {
- 
- 
-  var fileId =  knex('copias').select('codigo').where('copia_id',0).first();
- 
-   // var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp';
+    //var fileId =  knex('copias').select('codigo').where('copia_id',0).first();
+    var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp';
     var dest = fs.createWriteStream('./restaurado/foto.jpg');
     const drive = google.drive({ version: 'v3', auth });
     drive.files.get({fileId: fileId, alt: 'media'}, {responseType: 'stream'},
