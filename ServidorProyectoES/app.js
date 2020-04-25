@@ -562,13 +562,13 @@ function uploadFile(auth) {
            // await knex('copias').insert(fila);
             
             
-            async (req, res, next) => {
+          /*  async (req, res, next) => {
             
               var fila = {codigo: res.data.id};
               await knex('copias').insert(fila);
               console.log('asdsadasd ');
 
-            };
+            };*/
             
             
         }
