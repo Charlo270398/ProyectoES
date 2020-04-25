@@ -215,7 +215,7 @@ public class ListarFicheros extends javax.swing.JFrame {
   
         Fichero fichero = new Fichero();   
             try {
-                fichero.borrarFichero(MenuUsuario.USUARIO, listaFicherosNombre[jListMisFicheros.getSelectedIndex()],listaFicherosNombre[jListMisFicheros.getSelectedIndex()]);
+                fichero.borrarFichero(MenuUsuario.USUARIO, listaFicherosId[jListMisFicheros.getSelectedIndex()],listaFicherosNombre[jListMisFicheros.getSelectedIndex()]);
                 getListaFicherosGET();
         jListMisFicheros.setListData(listaFicherosNombre);
             } catch (IOException ex) {

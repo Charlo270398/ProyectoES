@@ -70,17 +70,20 @@ async function creaEsquema(res) {
       });
       console.log("Se ha creado la tabla comparticion_ficheros");
     }
-     //API Drive
-     existeTabla= await knex.schema.hasTable('copias');
-     if (!existeTabla) {
-       await knex.schema.createTable('copias', (tabla) => {
-         tabla.increments('copia_id').primary();
-         tabla.string('codigo', 50).unique();
-       });
-       console.log("Se ha creado la tabla copias");
-     }
-   }
-  
+    //API Drive
+    existeTabla= await knex.schema.hasTable('ficheros_drive');
+    if (!existeTabla) {
+      await knex.schema.createTable('ficheros_drive', (tabla) => {
+        tabla.increments('drive_id').primary();
+        tabla.string('codigo');
+        tabla.integer('fichero_id') // Add a foreign key...
+        .references('fichero_id')
+        .inTable('ficheros')
+        .onDelete('CASCADE');
+      });
+      console.log("Se ha creado la tabla ficheros_drive");
+    }
+  }
   catch (error) {
     console.log(`Error al crear las tablas: ${error}`);
     res.status(404).send({ result:null,error:'error al crear la tabla; contacta con el administrador' });
@@ -175,8 +178,6 @@ app.post('/registrarse', async (req,res) => {
   }
 });
 
-var filenameGLOBAL, filerouteGLOBAL;
-
 app.post('/subirFichero', async (req,res) => {
   if(req.files){
     const file = req.files.file1;
@@ -188,8 +189,6 @@ app.post('/subirFichero', async (req,res) => {
     const folderRoute =  "uploadedFiles/" + user;
     const fileRoute =  folderRoute + "/" + filename;
     const clave = req.body.clave;
-    filenameGLOBAL = filename;
-    filerouteGLOBAL = fileRoute;
     if (!fs.existsSync(folderRoute)) {
       fs.mkdirSync(folderRoute);
     }
@@ -208,7 +207,7 @@ app.post('/subirFichero', async (req,res) => {
       fs.readFile('credentials.json', (err,   content) => {
         if (err) return console.log('Error loading client secret file:', err);
         // Authorize a client with credentials, then call the Google Drive API.
-        authorize(JSON.parse(content), uploadFile);
+        authorizeUpload(JSON.parse(content), uploadFile, ficheroId, filename, fileRoute);
         //authorize(JSON.parse(content), getFile);
         //authorize(JSON.parse(content), listFiles);
       });
@@ -390,19 +389,16 @@ app.get('/usuarios/lista', async (req,res) => {
 });
 
 app.delete('/borrarFichero', async (req,res) => {
-  const user = req.body.usuario;
   const ficheroId = req.body.ficheroId;
-  const ficheroNombre = req.body.ficheroNombre;
-  const folderRoute =  "uploadedFiles/" + user;
-  const fileRoute =  folderRoute + "/" + ficheroNombre;
-  
+  const fileRoute = await knex('ficheros').select('ruta').where('fichero_id',ficheroId).first();
   try{ 
-    fs.unlinkSync(fileRoute)
-    //checkeorama
+    fs.unlinkSync(fileRoute.ruta)
     //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
-    await knex('ficheros').where({nombre: ficheroNombre}).del();
+    await knex('ficheros').where({fichero_id: ficheroId}).del();
+    //TODO: Borrar de GOOGLE DRIVE
+    //Borramos del registro de codigos de drive
+    await knex('ficheros_drive').where({fichero_id: ficheroId}).del();
     res.status(200).send({result:"OK", error: null});
-
   }catch(err){
     console.log(err);
     res.status(404).send({result:null, error: err});
@@ -410,13 +406,10 @@ app.delete('/borrarFichero', async (req,res) => {
   }
 });
 
-
-
-
 const PORT = process.env.PORT || 5000;
 https.createServer({
-  key: fs.readFileSync('server.key'),
-  cert: fs.readFileSync('server.cert')
+  key: fs.readFileSync('certificates/server.key'),
+  cert: fs.readFileSync('certificates/server.cert')
 },
 app).listen(PORT, function () {
   //SI NO EXISTE LA CARPETA DE LOS FICHEROS LA CREAMOS
@@ -432,7 +425,6 @@ app).listen(PORT, function () {
 
 
 //API DRIVE
-//const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
 //Drive API, v3
@@ -468,6 +460,19 @@ function authorize(credentials, callback) {
         callback(oAuth2Client);//list files and upload file
         //callback(oAuth2Client, '0B79LZPgLDaqESF9HV2V3YzYySkE');//get file
     });
+}
+
+function authorizeUpload(credentials, callback, fileId, fileName, fileRoute) {
+  const { client_secret, client_id, redirect_uris } = credentials.installed;
+  const oAuth2Client = new google.auth.OAuth2(
+      client_id, client_secret, redirect_uris[0]);
+
+  // Check if we have previously stored a token.
+  fs.readFile(TOKEN_PATH, (err, token) => {
+      if (err) return getAccessToken(oAuth2Client, callback);
+      oAuth2Client.setCredentials(JSON.parse(token));
+      callback(oAuth2Client, fileId, fileName, fileRoute);//list files and upload file
+  });
 }
 
 /**
@@ -510,7 +515,6 @@ function getList(drive, pageToken) {
     drive.files.list({
         corpora: 'user',
         pageSize: 10,
-        //q: "name='elvis233424234'",
         pageToken: pageToken ? pageToken : '',
         fields: 'nextPageToken, files(*)',
     }, (err, res) => {
@@ -522,10 +526,6 @@ function getList(drive, pageToken) {
             if (res.data.nextPageToken) {
                 getList(drive, res.data.nextPageToken);
             }
-
-            // files.map((file) => {
-            //     console.log(`${file.name} (${file.id})`);
-            // });
         } else {
             console.log('No files found.');
         }
@@ -538,77 +538,53 @@ function processList(files) {
         console.log(file);
     });
 }
-function uploadFile(auth) {
-    const drive = google.drive({ version: 'v3', auth });
-    var fileMetadata = {
-        'name': filenameGLOBAL
-    };
-    var media = {
-        //mimeType: 'image/jpeg',
-        body: fs.createReadStream(filerouteGLOBAL)
-    };
-    drive.files.create({
-        resource: fileMetadata,
-        media: media,
-        fields: 'id'
-    }, function (err, res) {
-        if (err) {
-            // Handle error
-            console.log(err);
-        } else {
-            console.log('File Id: ', res.data.id);
-      
-           // var fila = {codigo: res.data.id};
-           // await knex('copias').insert(fila);
-            
-            
-          /*  async (req, res, next) => {
-            
-              var fila = {codigo: res.data.id};
-              await knex('copias').insert(fila);
-              console.log('asdsadasd ');
+function uploadFile(auth, fileId, fileName, fileRoute) {
+  const drive = google.drive({ version: 'v3', auth });
+  var fileMetadata = {
+      'name': fileName
+  };
+  var media = {
+      //mimeType: 'image/jpeg',
+      body: fs.createReadStream(fileRoute)
+  };
+  drive.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id'
+  }, function (err, res) {
+      if (err) {
+          // Handle error
+          console.log(err);
+      } else {
+        //GUARDAR ID DEL FICHERO EN LA BD
+        insertarCodigoDrive(res.data.id, fileId[0]);
+      }
+  });
+}
 
-            };*/
-            
-            
-        }
-    });
+async function insertarCodigoDrive(codigo, fileId){
+  var fila = {codigo: codigo, fichero_id: fileId};
+  await knex('ficheros_drive').insert(fila);
 }
 
 function getFile(auth, fileId) {
-    //var fileId =  knex('copias').select('codigo').where('copia_id',0).first();
-    var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp';
-    var dest = fs.createWriteStream('./restaurado/foto.jpg');
-    const drive = google.drive({ version: 'v3', auth });
-    drive.files.get({fileId: fileId, alt: 'media'}, {responseType: 'stream'},
-    function(err, res){
-        res.data
-        .on('end', () => {
-            console.log('Done');
-        })
-        .on('error', err => {
-            console.log('Error', err);
-        })
-        .pipe(dest);
-    }
-);
-    /*
-    const drive = google.drive({ version: 'v3', au
-    th });
-    var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp"';
-    var dest = fs.createWriteStream('/tmp/photo.jpg');
-    drive.files.get({
-      fileId: fileId,
-      alt: 'media'
-    })
-        .on('end', function () {
+  //var fileId =  knex('copias').select('codigo').where('copia_id',0).first();
+  var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp';
+  var dest = fs.createWriteStream('./restaurado/foto.jpg');
+  const drive = google.drive({ version: 'v3', auth });
+  drive.files.get({fileId: fileId, alt: 'media'}, {responseType: 'stream'},
+  function(err, res){
+      res.data
+      .on('end', () => {
           console.log('Done');
-        })
-        .on('error', function (err) {
-          console.log('Error during download', err);
-        })
-        .pipe(dest);*/
+      })
+      .on('error', err => {
+          console.log('Error', err);
+      })
+      .pipe(dest);
+  });
 }
+
 function listFiles(auth) {
   const drive = google.drive({version: 'v3', auth});
   drive.files.list({
