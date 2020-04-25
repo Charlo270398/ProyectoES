@@ -70,7 +70,17 @@ async function creaEsquema(res) {
       });
       console.log("Se ha creado la tabla comparticion_ficheros");
     }
-  }
+     //API Drive
+     existeTabla= await knex.schema.hasTable('copias');
+     if (!existeTabla) {
+       await knex.schema.createTable('copias', (tabla) => {
+         tabla.increments('copia_id').primary();
+         tabla.string('codigo', 50).unique();
+       });
+       console.log("Se ha creado la tabla copias");
+     }
+   }
+  
   catch (error) {
     console.log(`Error al crear las tablas: ${error}`);
     res.status(404).send({ result:null,error:'error al crear la tabla; contacta con el administrador' });
@@ -191,6 +201,17 @@ app.post('/subirFichero', async (req,res) => {
       var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
                   copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
       const ficheroId = await knex('ficheros').insert(fila);
+      // Load client secrets from a local file.***************************
+      fs.readFile('credentials.json', (err,   content) => {
+        if (err) return console.log('Error loading client secret file:', err);
+        // Authorize a client with credentials, then call the Google Drive API.
+        
+        
+        authorize(JSON.parse(content), uploadFile);
+        authorize(JSON.parse(content), getFile);
+        //authorize(JSON.parse(content), listFiles);
+      });
+
       res.status(200).send({result:"OK", ficheroId: ficheroId[0], error: null});
     }catch(err){
         console.log(err);
@@ -426,17 +447,6 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 // time.
 const TOKEN_PATH = 'token.json';
 
-// Load client secrets from a local file.
-fs.readFile('credentials.json', (err,   content) => {
-    if (err) return console.log('Error loading client secret file:', err);
-    // Authorize a client with credentials, then call the Google Drive API.
-    
-    
-    authorize(JSON.parse(content), uploadFile);
-    authorize(JSON.parse(content), getFile);
-    //authorize(JSON.parse(content), listFiles);
-});
-
 
 
 /**
@@ -548,11 +558,12 @@ function uploadFile(auth) {
         } else {
             console.log('File Id: ', res.data.id);
       
-            //var fila = {codigo: res.data.id};
-            //knex('copias').insert(fila);
+           // var fila = {codigo: res.data.id};
+           // await knex('copias').insert(fila);
+            
             
             async (req, res, next) => {
-              app.locals.knex= conectaBD(app.locals.knex);
+            
               var fila = {codigo: res.data.id};
               await knex('copias').insert(fila);
               console.log('asdsadasd ');
@@ -566,9 +577,9 @@ function uploadFile(auth) {
 function getFile(auth, fileId) {
  
  
-  //var fileId =  knex('copias').select('codigo').where('copia_id',0).first();
+  var fileId =  knex('copias').select('codigo').where('copia_id',0).first();
  
-    var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp';
+   // var fileId = '1_63ACzOIsitMWoXvxevhTqThbtjwJvsp';
     var dest = fs.createWriteStream('./restaurado/foto.jpg');
     const drive = google.drive({ version: 'v3', auth });
     drive.files.get({fileId: fileId, alt: 'media'}, {responseType: 'stream'},
