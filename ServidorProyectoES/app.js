@@ -7,6 +7,7 @@ var app = express();
 var upload = require("express-fileupload");
 var dateFormat = require('dateformat');
 var fs = require("fs");
+var crypto = require('crypto');
 app.use(upload());
 
 const config = require('./config.js');
@@ -47,7 +48,9 @@ async function creaEsquema(res) {
         tabla.increments('fichero_id').primary();
         tabla.string('nombre');
         tabla.string('ruta').unique();
-        tabla.string('propietario', 50);
+        tabla.integer('propietario')
+        .references('usuario_id')
+        .inTable('usuarios');
         tabla.datetime('fecha_modificacion');
         tabla.boolean('copia_diaria');
         tabla.boolean('copia_semanal');
@@ -82,6 +85,20 @@ async function creaEsquema(res) {
         .onDelete('CASCADE');
       });
       console.log("Se ha creado la tabla ficheros_drive");
+    }
+    //TOKENS
+    existeTabla= await knex.schema.hasTable('usuarios_tokens');
+    if (!existeTabla) {
+      await knex.schema.createTable('usuarios_tokens', (tabla) => {
+        tabla.increments('token_id').primary();
+        tabla.integer('usuario_id') // Add a foreign key...
+        .references('usuario_id')
+        .inTable('usuarios')
+        .onDelete('CASCADE');
+        tabla.string('token');
+        tabla.datetime('fecha_expiracion');
+      });
+      console.log("Se ha creado la tabla usuarios_tokens");
     }
   }
   catch (error) {
@@ -119,6 +136,39 @@ app.get('/', function (req, res) {
   res.send('Hello Https funciona!');
 });
 
+//TOKEN
+
+async function insertarToken(fila){
+  const tokenUsuario = await knex('usuarios_tokens').select().where('usuario_id',fila.usuario_id).first();
+  //SI NO EXISTE LO INSERTAMOS POR PRIMERA VEZ
+  if(!tokenUsuario){
+    await knex('usuarios_tokens').insert(fila);
+  }else{
+    //SI EXISTE LO RESETEAMOS
+    await knex('usuarios_tokens').where('usuario_id',fila.usuario_id).update({
+      token: fila.token,
+      fecha_expiracion: fila.fecha_expiracion
+    })
+  }
+  
+}
+
+function generarToken(usuario_id){
+  //GENERA TOKEN ALEATORIO DE 48 BYTES Y LO ALMACENAMOS CON UN TEMPORIZADOR DE 30 MIN
+  var token = crypto.randomBytes(48).toString('hex');
+  //60000 segundos * 30 es igual a 30 MINUTOS
+  const fecha_expiracion = Date.now() + 30 * 60000;
+  var fila = {usuario_id: usuario_id, token: token, fecha_expiracion: fecha_expiracion};
+  insertarToken(fila);
+  return token;
+}
+
+async function comprobarToken(usuario_id, token){
+  const tokenUsuario = await knex('usuarios_tokens').select('token', 'fecha_expiracion').where('usuario_id',usuario_id).first();
+  return token == tokenUsuario.token && Date.now() < new Date(tokenUsuario.fecha_expiracion);
+}
+
+
 app.post('/login', async (req,res) => {
   try {
     const usuario = req.body.usuario;
@@ -130,7 +180,8 @@ app.post('/login', async (req,res) => {
     }
     const usuario_id = userData.usuario_id;
     if(hash.saltHashPasswordCOMPROBAR(password, userData.salt, userData.password)){
-      res.status(200).send({result:"OK", userId: usuario_id, error: null});
+      const token = generarToken(usuario_id);//GENERAMOS TOKEN PARA EL USUARIO
+      res.status(200).send({result:"OK", userId: usuario_id, userToken: token, error: null});
       return;
     }else{
       res.status(200).send({result:"ERROR", error: "Usuario/Contraseña incorrectos"});
@@ -150,9 +201,10 @@ app.post('/registrarse', async (req,res) => {
     const passwordData = hash.saltHashPassword(password);
     const publicKey = req.files.publicKey;
     const privateKey = req.files.privateKey;
-    const keysRoute = "usersKeys/"+usuario + "/";
     var fila = {usuario: usuario, password: passwordData.passwordHash, salt: passwordData.salt};
     const user_id = await knex('usuarios').insert(fila);
+    const keysRoute = "usersKeys/"+usuario + "/";
+    const token = generarToken(user_id[0]);//GENERAMOS TOKEN PARA EL USUARIO
     if (!fs.existsSync(keysRoute)) {
       fs.mkdirSync(keysRoute);
     }
@@ -170,7 +222,7 @@ app.post('/registrarse', async (req,res) => {
         return;
       }
     });
-    res.status(200).send({result:"OK", userId: user_id[0], error: null});
+    res.status(200).send({result:"OK", userId: user_id[0], userToken: token, error: null});
   }catch (err) {
     console.log(err);
     res.status(404).send({result:"ERROR", error: err.toString()});
@@ -179,45 +231,55 @@ app.post('/registrarse', async (req,res) => {
 });
 
 app.post('/subirFichero', async (req,res) => {
-  if(req.files){
-    const file = req.files.file1;
-    const user = req.body.usuario;
-    const copia_diaria = req.body.copia_diaria;
-    const copia_semanal = req.body.copia_semanal;
-    const copia_mensual = req.body.copia_mensual;
-    const filename = file.name;
-    const folderRoute =  "uploadedFiles/" + user;
-    const fileRoute =  folderRoute + "/" + filename;
-    const clave = req.body.clave;
-    if (!fs.existsSync(folderRoute)) {
-      fs.mkdirSync(folderRoute);
-    }
-    file.mv(fileRoute, function(err){
-      if(err){
-        console.log(err);
-        res.status(404).send({result:"ERROR", error: err});
-        return;
+  const token = req.body.userToken;
+  const userId = req.body.userId;
+  const userName = await knex('usuarios').select('usuario').where('usuario_id',userId).first();
+  if(await comprobarToken(userId, token)){
+    if(req.files){
+      const file = req.files.file1;
+      const copia_diaria = req.body.copia_diaria;
+      const copia_semanal = req.body.copia_semanal;
+      const copia_mensual = req.body.copia_mensual;
+      const filename = file.name;
+      const folderRoute =  "uploadedFiles/" + userName.usuario;
+      const fileRoute =  folderRoute + "/" + filename;
+      const clave = req.body.clave;
+      if (!fs.existsSync(folderRoute)) {
+        fs.mkdirSync(folderRoute);
       }
-    });
-    //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
-    try{
-      var fila = {nombre: filename, ruta: fileRoute, propietario: user, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
-                  copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
-      const ficheroId = await knex('ficheros').insert(fila);
-      fs.readFile('credentials.json', (err,   content) => {
-        if (err) return console.log('Error loading client secret file:', err);
-        // Authorize a client with credentials, then call the Google Drive API.
-        authorizeUpload(JSON.parse(content), uploadFile, ficheroId, filename, fileRoute);
-        //authorize(JSON.parse(content), getFile);
-        //authorize(JSON.parse(content), listFiles);
+      file.mv(fileRoute, function(err){
+        if(err){
+          console.log(err);
+          res.status(404).send({result:"ERROR", error: err});
+          return;
+        }
       });
-
-      res.status(200).send({result:"OK", ficheroId: ficheroId[0], error: null});
-    }catch(err){
-        console.log(err);
-        res.status(404).send({result:"ERROR", error: err});
-        return;
+      //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
+      try{
+        var fila = {nombre: filename, ruta: fileRoute, propietario: userId, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
+                    copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
+        const ficheroId = await knex('ficheros').insert(fila);
+        fs.readFile('credentials.json', (err,   content) => {
+          if (err) return console.log('Error loading client secret file:', err);
+          // Authorize a client with credentials, then call the Google Drive API.
+          authorizeUpload(JSON.parse(content), uploadFile, ficheroId, filename, fileRoute);
+          //authorize(JSON.parse(content), getFile);
+          //authorize(JSON.parse(content), listFiles);
+        });
+  
+        res.status(200).send({result:"OK", ficheroId: ficheroId[0], error: null});
+      }catch(err){
+          console.log(err);
+          res.status(404).send({result:"ERROR", error: err});
+          return;
+      }
+    }else{
+      res.status(404).send({result:"ERROR", error: "No hay fichero"});
+      return;
     }
+  }else{
+    res.status(404).send({result:"ERROR", error: "No tienes permisos"});
+    return;
   }
 });
 
@@ -227,7 +289,8 @@ app.post('/añadirCompartido', async (req,res) => {
     const compartido = req.body.compartido;
     const nombre = req.body.nombre;
     const clave = req.body.clave;
-    const fileRoute =  "uploadedFiles/" + propietario + "/" + nombre;
+    const userName = await knex('usuarios').select('usuario').where('usuario_id',propietario).first();
+    const fileRoute =  "uploadedFiles/" + userName.usuario + "/" + nombre;
     //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     try{
       var fila = {fichero_id: ficheroId, propietario: propietario, compartido: compartido, rutaFichero: fileRoute, nombreFichero: nombre,  claveCompartida: clave};
@@ -241,18 +304,11 @@ app.post('/añadirCompartido', async (req,res) => {
 });
 
 app.get('/obtenerListaFicheros', async (req,res) => {
+  const userId = req.query.userId;
     try{
-      const userId = req.query.userId;
-      const userData = await knex('usuarios').select('usuario').where('usuario_id',userId).first();
-      if(userData){
-        const fileList = await knex('ficheros').select('fichero_id', 'nombre').where('propietario',userData.usuario);
+        const fileList = await knex('ficheros').select('fichero_id', 'nombre').where('propietario',userId);
         res.status(200).send({result:fileList, error: null});
         return;
-      }else{
-        console.log("El usuario no existe");
-        res.status(404).send({result:"ERROR", error: "El usuario no existe"});
-        return;
-      }
     }catch(err){
       console.log(err);
       res.status(404).send({result:"ERROR", error: err});
@@ -298,6 +354,7 @@ app.get('/obtenerFicheroCompartido', async (req,res) => {
       });
     }else{
       res.status(404).send({result:null, error: err});
+      return;
     }
   }catch(err){
     console.log(err);
@@ -307,17 +364,19 @@ app.get('/obtenerFicheroCompartido', async (req,res) => {
 });
 
 app.get('/obtenerClavePublica', async (req,res) => {
-  //PASAR COMO ARGUMENTO NOMBRE DEL USUARIO
+  //PASAR COMO ARGUMENTO ID DEL USUARIO
   try{
-    const usuario = req.query.usuario;
-    const rutaClavePublica = "usersKeys/"+usuario + "/publicKey_" + usuario;
+    const usuarioId = req.query.usuarioId;
+    const userName = await knex('usuarios').select('usuario').where('usuario_id',usuarioId).first();
+
+    const rutaClavePublica = "usersKeys/"+ userName.usuario + "/publicKey_" + userName.usuario;
     if (fs.existsSync(rutaClavePublica)) {
       fs.readFile( rutaClavePublica, function (err, data) {
         if (err) {
           res.status(404).send({result:null, error: err});
           return; 
         }
-        res.status(200).send({data:data, filename: "publicKey_" + usuario});
+        res.status(200).send({data:data, filename: "publicKey_" + userName.usuario});
       });
     }else{
       res.status(404).send({result:null, error: err});
@@ -330,17 +389,19 @@ app.get('/obtenerClavePublica', async (req,res) => {
 });
 
 app.get('/obtenerClavePrivada', async (req,res) => {
-  //PASAR COMO ARGUMENTO NOMBRE DEL USUARIO
+  //PASAR COMO ARGUMENTO ID DEL USUARIO
   try{
-    const usuario = req.query.usuario;
-    const rutaClavePrivada = "usersKeys/"+usuario + "/privateKey_" + usuario;
+    const usuarioId = req.query.usuarioId;
+    const userName = await knex('usuarios').select('usuario').where('usuario_id',usuarioId).first();
+
+    const rutaClavePrivada = "usersKeys/" + userName.usuario + "/privateKey_" + userName.usuario;
     if (fs.existsSync(rutaClavePrivada)) {
       fs.readFile( rutaClavePrivada, function (err, data) {
         if (err) {
           res.status(404).send({result:null, error: err});
           return; 
         }
-        res.status(200).send({data:data, filename: "privateKey_" + usuario});
+        res.status(200).send({data:data, filename: "privateKey_" + userName.usuario});
       });
     }else{
       res.status(404).send({result:null, error: err});
@@ -390,9 +451,23 @@ app.get('/usuarios/lista', async (req,res) => {
 
 app.delete('/borrarFichero', async (req,res) => {
   const ficheroId = req.body.ficheroId;
-  const fileRoute = await knex('ficheros').select('ruta').where('fichero_id',ficheroId).first();
+  const userId = req.body.userId;
+  const userToken = req.body.userToken;
+
+  const file = await knex('ficheros').select('ruta', 'propietario').where('fichero_id',ficheroId).first();
+
+  if(await comprobarToken(userId, userToken)){
+    res.status(404).send({result:null, error: "El usuario no está autorizado"});
+    return; 
+  }
+
+  if(file.propietario != userId){
+    res.status(404).send({result:null, error: "El usuario aportado no es el propietario"});
+    return; 
+  }
+
   try{ 
-    fs.unlinkSync(fileRoute.ruta)
+    fs.unlinkSync(file.ruta)
     //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     await knex('ficheros').where({fichero_id: ficheroId}).del();
     //TODO: Borrar de GOOGLE DRIVE

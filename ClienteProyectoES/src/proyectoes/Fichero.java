@@ -102,7 +102,7 @@ public class Fichero {
                 String result = json_response.getString("result");
                 //Resultado de la petición
                 if(result.equals("OK")){
-                    Seguridad.descargarClavePublicaRSA(USUARIO);
+                    Seguridad.descargarClavePublicaRSA(MenuUsuario.USER_ID);
                 }else{
                     String error = json_response.getString("error");
                     System.out.println(error);
@@ -336,7 +336,7 @@ public class Fichero {
         }
     }
     
-    public void subirFicheroPOST(String usuario) throws IOException, NoSuchAlgorithmException{
+    public void subirFicheroPOST() throws IOException, NoSuchAlgorithmException{
         //COMPRESION A ZIP
         if(fichero.isDirectory()){
             //SI EL ES CARPETA
@@ -352,7 +352,7 @@ public class Fichero {
         //Pasamos a zip el fichero
         File TEMP = new File("TEMPORAL.zip"); //Cargamos el zip temporal para subirlo
         
-        //Generamos clave aleatoria para AES --TODO
+        //Generamos clave aleatoria para AES
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(256);
         SecretKey secretKey = keyGen.generateKey();
@@ -370,7 +370,8 @@ public class Fichero {
         String url = "https://"+IP+":"+PORT+"/subirFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("usuario", usuario)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
                 .addFormDataPart("copia_diaria", String.valueOf(copia_diaria))
                 .addFormDataPart("copia_semanal", String.valueOf(copia_semanal))
                 .addFormDataPart("copia_mensual", String.valueOf(copia_mensual))
@@ -392,7 +393,7 @@ public class Fichero {
             //Resultado de la petición
             if(result.equals("OK")){
                 String ficheroId = String.valueOf(json_response.getInt("ficheroId"));
-                compartirFichero(ficheroId, usuario, new String(base64Cipher), fichero.getName());
+                compartirFichero(ficheroId, MenuUsuario.USER_ID, new String(base64Cipher), fichero.getName());
                 TEMP.delete();//Borramos el zip temporal
                 cifradoTEMP.delete();//Borramos el cifrado temporal
             }else{
@@ -411,6 +412,8 @@ public class Fichero {
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("usuario", usuario)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
                 .addFormDataPart("ficheroId", ficheroId)
                 .addFormDataPart("ficheroNombre", ficheroNombre)
                 .build();

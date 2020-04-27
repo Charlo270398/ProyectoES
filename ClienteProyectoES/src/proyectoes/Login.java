@@ -267,6 +267,8 @@ public class Login extends javax.swing.JFrame {
            if(result.equals("OK")){
                //LOGIN CORRECTO
                String userId = String.valueOf(json_response.getInt("userId"));
+               String userToken= json_response.getString("userToken");
+               FRAME_menuUsuario.setUSER_TOKEN(userToken);
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
@@ -317,19 +319,21 @@ public class Login extends javax.swing.JFrame {
            if(result.equals("OK")){
                //LOGIN CORRECTO
                String userId = String.valueOf(json_response.getInt("userId"));
+               String userToken= json_response.getString("userToken");
+               FRAME_menuUsuario.setUSER_TOKEN(userToken);
                FRAME_menuUsuario.setVisible(true);
                FRAME_menuUsuario.setUSUARIO(usuario);
                FRAME_menuUsuario.setUSER_ID(userId);
                FRAME_menuUsuario.setUSER_PK(AES_Hash);
-               Seguridad.descargarClavePublicaRSA(usuario);
+               Seguridad.descargarClavePublicaRSA(userId);
                this.setVisible(false);
            }else{
                String error = json_response.getString("error");
                jLabelError.setText(error);
            }
-       } catch (IOException e) {
-           e.printStackTrace();
-           jLabelError.setText("Error realizando petición");
+       } catch (IOException ex) {
+           ex.printStackTrace();
+           jLabelError.setText(ex.getMessage());
        } catch (JSONException ex) { 
             Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
        } 

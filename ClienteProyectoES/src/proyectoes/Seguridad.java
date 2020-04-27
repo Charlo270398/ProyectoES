@@ -110,8 +110,8 @@ public class Seguridad {
     }
     
     public static void descargarClavesRSA(String usuario, String AES_KEY){
-        descargarClavePublicaRSA(usuario);
-        descargarClavePrivadaRSA(usuario, AES_KEY, "private.key");
+        descargarClavePublicaRSA(MenuUsuario.USER_ID);
+        descargarClavePrivadaRSA(MenuUsuario.USER_ID, AES_KEY, "private.key");
     }
     
     public static String cifrarConRSA(String AES_KEY){
@@ -132,9 +132,9 @@ public class Seguridad {
         }
     }
     
-    public static void descargarClavePublicaRSA(String usuario){
+    public static void descargarClavePublicaRSA(String usuarioId){
         OkHttpClient client = new OkHttpClient();
-        String url = "https://"+IP+":"+PORT+"/obtenerClavePublica?usuario="+usuario;
+        String url = "https://"+IP+":"+PORT+"/obtenerClavePublica?usuarioId="+usuarioId;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -168,9 +168,9 @@ public class Seguridad {
         }
     }
     
-    private static void descargarClavePrivadaRSA(String usuario, String AES_KEY, String KEYNAME){
+    private static void descargarClavePrivadaRSA(String usuarioId, String AES_KEY, String KEYNAME){
         OkHttpClient client = new OkHttpClient();
-        String url = "https://"+IP+":"+PORT+"/obtenerClavePrivada?usuario="+usuario;
+        String url = "https://"+IP+":"+PORT+"/obtenerClavePrivada?usuarioId="+usuarioId;
         Request request = new Request.Builder()
                 .url(url)
                 .get()

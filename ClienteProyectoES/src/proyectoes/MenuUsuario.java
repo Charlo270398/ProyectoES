@@ -26,6 +26,15 @@ public class MenuUsuario extends javax.swing.JFrame {
     public static String USUARIO = null;
     public static String USER_ID = null;
     public static String USER_AES_KEY  = null;
+    public static String USER_TOKEN  = null;
+
+    public static String getUSER_TOKEN() {
+        return USER_TOKEN;
+    }
+
+    public static void setUSER_TOKEN(String USER_TOKEN) {
+        MenuUsuario.USER_TOKEN = USER_TOKEN;
+    }
 
     public static String getUSER_PK() {
         return USER_AES_KEY;

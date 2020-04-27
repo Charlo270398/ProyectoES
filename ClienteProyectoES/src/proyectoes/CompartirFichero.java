@@ -24,6 +24,10 @@ public class CompartirFichero extends javax.swing.JFrame {
     
     private String[] PERMITIDOS_listaUsuariosNombre = new String[0], PERMITIDOS_listaUsuariosId = new String[0];
 
+    public String[] getPERMITIDOS_listaUsuariosId() {
+        return PERMITIDOS_listaUsuariosId;
+    }
+
     public String[] getPERMITIDOS_listaUsuariosNombre() {
         return PERMITIDOS_listaUsuariosNombre;
     }

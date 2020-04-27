@@ -207,12 +207,12 @@ public class UploadFile extends javax.swing.JFrame {
     private void jButtonAñadirArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAñadirArchivoActionPerformed
         if(selectedFile != null){
             try {
-                Fichero fichero = new Fichero (selectedFile, FRAME_CompartirFichero.getPERMITIDOS_listaUsuariosNombre());
+                Fichero fichero = new Fichero (selectedFile, FRAME_CompartirFichero.getPERMITIDOS_listaUsuariosId());
                 fichero.setCopia_diaria(jCheckBoxDiaria.isSelected());
                 fichero.setCopia_semanal(jCheckBoxSemanal.isSelected());
                 fichero.setCopia_mensual(jCheckBoxMensual.isSelected());
                 try {
-                    fichero.subirFicheroPOST(MenuUsuario.USUARIO);
+                    fichero.subirFicheroPOST();
                 } catch (NoSuchAlgorithmException ex) {
                     System.out.println(ex.toString());
                 }
