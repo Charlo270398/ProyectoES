@@ -8,10 +8,17 @@ package proyectoes;
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
+import java.security.cert.CertificateException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -239,7 +246,7 @@ public class Login extends javax.swing.JFrame {
        File pub_key = new File("public.key");
        File priv_key = new File("privateKey_" + usuario);
        
-       OkHttpClient client = new OkHttpClient();
+       OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
        MediaType JSON = MediaType.parse("application/json; charset=utf-8");
        // put your json here
 
@@ -288,7 +295,7 @@ public class Login extends javax.swing.JFrame {
             Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
        }
     }    
-    
+        
     private void loginPOST(String usuario, String password, String AES_Hash){
         // create your json here
         JSONObject jsonObject = new JSONObject();
@@ -299,7 +306,7 @@ public class Login extends javax.swing.JFrame {
             e.printStackTrace();
         }
 
-       OkHttpClient client = new OkHttpClient();
+       OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
        MediaType JSON = MediaType.parse("application/json; charset=utf-8");
        // put your json here
        RequestBody body = RequestBody.create(JSON, jsonObject.toString());

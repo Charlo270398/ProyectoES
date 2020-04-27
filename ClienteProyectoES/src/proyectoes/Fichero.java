@@ -79,7 +79,7 @@ public class Fichero {
             //Ciframos con RSA la clave AES aleatoria
             String clave_AES_CIFRADA = Seguridad.cifrarConRSA(AES_KEY);
             //Petición POST
-            OkHttpClient client = new OkHttpClient();
+            OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
             String url = "https://"+IP+":"+PORT+"/añadirCompartido";
             RequestBody body = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
@@ -237,7 +237,7 @@ public class Fichero {
     }
     
     public void getFicheroGET(String ficheroId){
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
         String url = "https://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
         Request request = new Request.Builder()
                 .url(url)
@@ -287,7 +287,7 @@ public class Fichero {
     }
     
     public void getFicheroCompartidoGET(String ficheroId){
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
         String url = "https://"+IP+":"+PORT+"/obtenerFicheroCompartido?ficheroCompartidoId="+ficheroId;
         Request request = new Request.Builder()
                 .url(url)
@@ -366,7 +366,7 @@ public class Fichero {
         
         //Ciframos con RSA la clave AES aleatoria
         String clave_AES_CIFRADA = Seguridad.cifrarConRSA(new String(base64Cipher));
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
         String url = "https://"+IP+":"+PORT+"/subirFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)

@@ -37,7 +37,7 @@ public class ListarFicheros extends javax.swing.JFrame {
     }
     
     public void getListaFicherosGET(){
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
         String url = "https://"+IP+":"+PORT+"/obtenerListaFicheros?userId=" + MenuUsuario.USER_ID;
         Request request = new Request.Builder()
                 .url(url)
