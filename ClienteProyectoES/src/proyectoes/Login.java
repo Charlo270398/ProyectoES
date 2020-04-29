@@ -273,6 +273,9 @@ public class Login extends javax.swing.JFrame {
            //COMPROBAR AUTENTICACION
            if(result.equals("OK")){
                //LOGIN CORRECTO
+               //Creamos hilo para realizar copias
+               MantenimientoCopias hiloMantenimientoCopias = new MantenimientoCopias();
+               hiloMantenimientoCopias.start();
                String userId = String.valueOf(json_response.getInt("userId"));
                String userToken= json_response.getString("userToken");
                FRAME_menuUsuario.setUSER_TOKEN(userToken);
@@ -325,6 +328,9 @@ public class Login extends javax.swing.JFrame {
            //COMPROBAR AUTENTICACION
            if(result.equals("OK")){
                //LOGIN CORRECTO
+               //Creamos hilo para realizar copias
+               MantenimientoCopias hiloMantenimientoCopias = new MantenimientoCopias();
+               hiloMantenimientoCopias.start();
                String userId = String.valueOf(json_response.getInt("userId"));
                String userToken= json_response.getString("userToken");
                FRAME_menuUsuario.setUSER_TOKEN(userToken);
