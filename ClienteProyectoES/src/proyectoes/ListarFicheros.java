@@ -26,6 +26,7 @@ public class ListarFicheros extends javax.swing.JFrame {
     
     //Un array para mostrarlo en la lista y otro para relacionar los Id del fichero
     String[] listaFicherosNombre, listaFicherosId;
+    public static CompartirMiFichero FRAME_compartirMiFichero;
     /**
      * Creates new form ListarFicheros
      */
@@ -142,6 +143,11 @@ public class ListarFicheros extends javax.swing.JFrame {
         });
 
         jButtonCompartir.setText("Compartir");
+        jButtonCompartir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonCompartirActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -214,15 +220,24 @@ public class ListarFicheros extends javax.swing.JFrame {
     private void jButtonEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEliminarActionPerformed
   
         Fichero fichero = new Fichero();   
-            try {
-                fichero.borrarFichero(MenuUsuario.USUARIO, listaFicherosId[jListMisFicheros.getSelectedIndex()],listaFicherosNombre[jListMisFicheros.getSelectedIndex()]);
-                getListaFicherosGET();
-        jListMisFicheros.setListData(listaFicherosNombre);
-            } catch (IOException ex) {
-                System.out.println(ex.toString());
-            }
+        try {
+            fichero.borrarFichero(MenuUsuario.USUARIO, listaFicherosId[jListMisFicheros.getSelectedIndex()],listaFicherosNombre[jListMisFicheros.getSelectedIndex()]);
+            getListaFicherosGET();
+            jListMisFicheros.setListData(listaFicherosNombre);
+        } catch (IOException ex) {
+            System.out.println(ex.toString());
+        }
         
     }//GEN-LAST:event_jButtonEliminarActionPerformed
+
+    private void jButtonCompartirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCompartirActionPerformed
+        // TODO add your handling code here:
+        if(jListMisFicheros.getSelectedIndex() != -1){
+            FRAME_compartirMiFichero = new CompartirMiFichero(Integer.parseInt(listaFicherosId[jListMisFicheros.getSelectedIndex()]));
+            FRAME_compartirMiFichero.setVisible(true);
+            this.setVisible(false);
+        }
+    }//GEN-LAST:event_jButtonCompartirActionPerformed
 
     /**
      * @param args the command line arguments

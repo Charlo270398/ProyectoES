@@ -169,6 +169,20 @@ async function comprobarToken(usuario_id, token){
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+//FUNCIONES POST
+
 app.post('/login', async (req,res) => {
   try {
     const usuario = req.body.usuario;
@@ -225,7 +239,12 @@ app.post('/registrarse', async (req,res) => {
     res.status(200).send({result:"OK", userId: user_id[0], userToken: token, error: null});
   }catch (err) {
     console.log(err);
-    res.status(404).send({result:"ERROR", error: err.toString()});
+    if(err.errno == 19){
+      res.status(404).send({result:"ERROR", error: "El usuario ya existe"});
+    }
+    else{
+      res.status(404).send({result:"ERROR", error: err.toString()});
+    }
     return;
   }
 });
@@ -302,6 +321,8 @@ app.post('/añadirCompartido', async (req,res) => {
         return;
     }
 });
+
+//FUNCIONES GET
 
 app.get('/obtenerListaFicheros', async (req,res) => {
   const userId = req.query.userId;
@@ -449,11 +470,44 @@ app.get('/usuarios/lista', async (req,res) => {
   }
 });
 
+app.get('/compartidosFichero', async (req,res) => {
+  try{
+    const ficheroId = req.query.ficheroId;
+    const listaUsuariosPERMITIDOS = await knex('comparticion_ficheros').join('usuarios as u', 'u.usuario_id', 'comparticion_ficheros.compartido').select('compartido', 'u.usuario').where('fichero_id', ficheroId);
+    const arrayReturn = [];
+    listaUsuariosPERMITIDOS.forEach(row => {
+      arrayReturn.push({"compartido": row.compartido, "usuario": row.usuario})
+    });
+    res.status(200).send({result:arrayReturn});
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/noCompartidosFichero', async (req,res) => {
+  try{
+    const ficheroId = req.query.ficheroId;
+    const listaUsuariosPERMITIDOS = await knex('usuarios').select('usuario_id', 'usuario').whereNotIn('usuario_id',knex('comparticion_ficheros').select('compartido').where('fichero_id', ficheroId));
+    const arrayReturn = [];
+    listaUsuariosPERMITIDOS.forEach(row => {
+      arrayReturn.push({"compartido": row.usuario_id, "usuario": row.usuario})
+    });
+    res.status(200).send({result:arrayReturn});
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+//FUNCIONES DELETE
+
 app.delete('/borrarFichero', async (req,res) => {
   const ficheroId = req.body.ficheroId;
   const userId = req.body.userId;
   const userToken = req.body.userToken;
-
   const file = await knex('ficheros').select('ruta', 'propietario').where('fichero_id',ficheroId).first();
 
   if(await comprobarToken(userId, userToken)){
@@ -481,7 +535,43 @@ app.delete('/borrarFichero', async (req,res) => {
   }
 });
 
+app.delete('/borrarCompartido', async (req,res) => {
+  const ficheroId = req.body.ficheroId;
+  const userId = req.body.userId;
+  const compartidoId =  req.body.compartidoId;
+  const userToken = req.body.userToken;
+
+  const file = await knex('comparticion_ficheros').select('propietario').where('fichero_id',ficheroId).first();
+  if(await comprobarToken(userId, userToken)){
+    res.status(404).send({result:null, error: "El usuario no está autorizado"});
+    return; 
+  }
+
+  if(file){
+    if(file.propietario != userId){
+      res.status(404).send({result:null, error: "El usuario aportado no es el propietario"});
+      return; 
+    }
+  }else{
+    res.status(404).send({result:null, error: "El fichero no está siendo compartido"});
+    return; 
+  }
+
+  try{ 
+    //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
+    await knex('comparticion_ficheros').where({fichero_id: ficheroId, compartido: compartidoId}).del();
+    //Borramos del registro de codigos de drive
+    res.status(200).send({result:"OK", error: null});
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
 const PORT = process.env.PORT || 5000;
+
+
 https.createServer({
   key: fs.readFileSync('certificates/server.key'),
   cert: fs.readFileSync('certificates/server.cert')
@@ -496,6 +586,19 @@ app).listen(PORT, function () {
   }
   console.log(`Aplicación lanzada en el puerto ${ PORT }!`);
 });
+
+
+//Para arrancar con HTTP comentar la sentencia anterior y descomentar esta
+//app.listen(PORT);
+
+
+
+
+
+
+
+
+
 
 
 

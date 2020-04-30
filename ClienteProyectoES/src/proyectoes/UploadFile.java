@@ -25,11 +25,11 @@ public class UploadFile extends javax.swing.JFrame {
      */
     public UploadFile() {
         initComponents();
-        FRAME_CompartirFichero = new CompartirFichero();
+        FRAME_CompartirFichero = new UploadCompartirFichero();
     }
     
     File selectedFile = null;
-    CompartirFichero FRAME_CompartirFichero = null;
+    UploadCompartirFichero FRAME_CompartirFichero = null;
     
     /**
      * This method is called from within the constructor to initialize the form.

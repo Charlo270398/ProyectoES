@@ -11,17 +11,16 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import static proyectoes.Login.FRAME_menuUsuario;
-import static proyectoes.MenuUsuario.FRAME_uploadFile;
+import static proyectoes.MenuUsuario.FRAME_listarFicheros;
 import static proyectoes.MenuUsuario.USER_ID;
-import static proyectoes.MenuUsuario.USUARIO;
 
 /**
  *
  * @author Carlos
  */
-public class CompartirFichero extends javax.swing.JFrame {
+public class CompartirMiFichero extends javax.swing.JFrame {
     
+    private int ficheroId;
     private String[] PERMITIDOS_listaUsuariosNombre = new String[0], PERMITIDOS_listaUsuariosId = new String[0];
 
     public String[] getPERMITIDOS_listaUsuariosId() {
@@ -35,19 +34,60 @@ public class CompartirFichero extends javax.swing.JFrame {
     /**
      * Creates new form Compartir
      */
-    public CompartirFichero() {
+    public CompartirMiFichero(int ficheroId) {
         initComponents();
-        getListaFicherosGET();
+        this.ficheroId = ficheroId;
+        getListaUsuariosDenegadosGET();
+        getListaUsuariosPermtidosGET();
         jListNoPermitidos.setListData(DENEGADOS_listaUsuariosNombre);
+        jListPermitidos.setListData(PERMITIDOS_listaUsuariosNombre);
     }
     
-    public CompartirFichero(String ficheroId) {
+    public CompartirMiFichero(String ficheroId) {
         initComponents();
     }
     
-    public void getListaFicherosGET(){
+    public void getListaUsuariosDenegadosGET(){
         OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
-        String url = "https://localhost:5000/usuarios/lista?userId=" + USER_ID;
+        String url = "https://localhost:5000/noCompartidosFichero?ficheroId=" + ficheroId;
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+        try{
+            Response response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            try {
+                String user_id, nombre;
+                JSONObject json_response = new JSONObject(new String(responseBody));
+                JSONArray array_json = (JSONArray) json_response.get("result");
+                
+                //Inicializamos los array con el tamaño del json devuelto menos nuestro usuario
+                DENEGADOS_listaUsuariosNombre = new String[array_json.length()-1];
+                DENEGADOS_listaUsuariosId = new String[array_json.length()-1];
+                
+                //Rellenamos los arrays
+                for (int i=0, j=0; i < array_json.length(); i++) {
+                    nombre = (String) array_json.getJSONObject(i).get("usuario");
+                    user_id = String.valueOf(array_json.getJSONObject(i).getInt("compartido"));
+                    //No contamos nuestro propio USUARIO
+                    if(Integer.parseInt(USER_ID)!=Integer.parseInt(user_id)){
+                        DENEGADOS_listaUsuariosNombre[j] = nombre;
+                        DENEGADOS_listaUsuariosId[j] = user_id;
+                        j++;
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+        }catch(Exception e){
+            System.out.println(e);
+        }
+    }
+    
+    public void getListaUsuariosPermtidosGET(){
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+        String url = "https://localhost:5000/compartidosFichero?ficheroId=" + ficheroId;
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -61,15 +101,15 @@ public class CompartirFichero extends javax.swing.JFrame {
                 JSONArray array_json = (JSONArray) json_response.get("result");
                 
                 //Inicializamos los array con el tamaño del json devuelto
-                DENEGADOS_listaUsuariosNombre = new String[array_json.length()];
-                DENEGADOS_listaUsuariosId = new String[array_json.length()];
+                PERMITIDOS_listaUsuariosNombre = new String[array_json.length()];
+                PERMITIDOS_listaUsuariosId = new String[array_json.length()];
                 
                 //Rellenamos los arrays
                 for (int i=0; i < array_json.length(); i++) {
                     nombre = (String) array_json.getJSONObject(i).get("usuario");
-                    fichero_id = String.valueOf(array_json.getJSONObject(i).getInt("usuario_id"));
-                    DENEGADOS_listaUsuariosNombre[i] = nombre;
-                    DENEGADOS_listaUsuariosId[i] = fichero_id;
+                    fichero_id = String.valueOf(array_json.getJSONObject(i).getInt("compartido"));
+                    PERMITIDOS_listaUsuariosNombre[i] = nombre;
+                    PERMITIDOS_listaUsuariosId[i] = fichero_id;
                 }
             } catch (Exception e) {
                 System.out.println(e);
@@ -108,7 +148,7 @@ public class CompartirFichero extends javax.swing.JFrame {
         jPanel2.setBackground(new java.awt.Color(255, 153, 51));
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 0, 24)); // NOI18N
-        jLabel1.setText("Compartir archivo");
+        jLabel1.setText("El fichero es compartido con");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -228,8 +268,9 @@ public class CompartirFichero extends javax.swing.JFrame {
 
     private void jButtonBackActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBackActionPerformed
         // TODO add your handling code here:
+        //CAMBIAR PERMISOS DE TODO
         this.hide();
-        FRAME_uploadFile.setVisible(true);
+        FRAME_listarFicheros.setVisible(true);
     }//GEN-LAST:event_jButtonBackActionPerformed
     
     public static String[] removeElement(String[] original, int element){
@@ -288,21 +329,23 @@ public class CompartirFichero extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(CompartirFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(CompartirMiFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(CompartirFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(CompartirMiFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(CompartirFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(CompartirMiFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(CompartirFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(CompartirMiFichero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+        //</editor-fold>
         //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new CompartirFichero().setVisible(true);
+                
             }
         });
     }
