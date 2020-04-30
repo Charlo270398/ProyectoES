@@ -509,14 +509,13 @@ app.delete('/borrarFichero', async (req,res) => {
   const userId = req.body.userId;
   const userToken = req.body.userToken;
   const file = await knex('ficheros').select('ruta', 'propietario').where('fichero_id',ficheroId).first();
-
-  if(await comprobarToken(userId, userToken)){
-    res.status(404).send({result:null, error: "El usuario no está autorizado"});
+  if(!await comprobarToken(userId, userToken)){
+    res.status(404).send({result:"error", error: "El usuario no está autorizado"});
     return; 
   }
 
   if(file.propietario != userId){
-    res.status(404).send({result:null, error: "El usuario aportado no es el propietario"});
+    res.status(404).send({result:"error", error: "El usuario aportado no es el propietario"});
     return; 
   }
 
@@ -524,13 +523,15 @@ app.delete('/borrarFichero', async (req,res) => {
     fs.unlinkSync(file.ruta)
     //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     await knex('ficheros').where({fichero_id: ficheroId}).del();
+    //Borrar claves compartidas
+    await knex('comparticion_ficheros').where({fichero_id: ficheroId}).del();
     //TODO: Borrar de GOOGLE DRIVE
     //Borramos del registro de codigos de drive
     await knex('ficheros_drive').where({fichero_id: ficheroId}).del();
     res.status(200).send({result:"OK", error: null});
   }catch(err){
     console.log(err);
-    res.status(404).send({result:null, error: err});
+    res.status(404).send({result:"error", error: err});
     return; 
   }
 });
@@ -542,7 +543,7 @@ app.delete('/borrarCompartido', async (req,res) => {
   const userToken = req.body.userToken;
 
   const file = await knex('comparticion_ficheros').select('propietario').where('fichero_id',ficheroId).first();
-  if(await comprobarToken(userId, userToken)){
+  if(!await comprobarToken(userId, userToken)){
     res.status(404).send({result:null, error: "El usuario no está autorizado"});
     return; 
   }

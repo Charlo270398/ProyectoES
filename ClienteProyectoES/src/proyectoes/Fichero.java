@@ -407,7 +407,7 @@ public class Fichero {
         } 
     }
      public void borrarFichero(String usuario, String ficheroId, String ficheroNombre) throws FileNotFoundException, IOException{
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
         String url = "https://"+IP+":"+PORT+"/borrarFichero";
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
