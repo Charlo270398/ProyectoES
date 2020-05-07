@@ -150,7 +150,6 @@ async function insertarToken(fila){
       fecha_expiracion: fila.fecha_expiracion
     })
   }
-  
 }
 
 function generarToken(usuario_id){
@@ -167,8 +166,6 @@ async function comprobarToken(usuario_id, token){
   const tokenUsuario = await knex('usuarios_tokens').select('token', 'fecha_expiracion').where('usuario_id',usuario_id).first();
   return token == tokenUsuario.token && Date.now() < new Date(tokenUsuario.fecha_expiracion);
 }
-
-
 
 
 
@@ -315,11 +312,42 @@ app.post('/añadirCompartido', async (req,res) => {
       var fila = {fichero_id: ficheroId, propietario: propietario, compartido: compartido, rutaFichero: fileRoute, nombreFichero: nombre,  claveCompartida: clave};
       await knex('comparticion_ficheros').insert(fila);
       res.status(200).send({result:"OK", error: null});
+      return;
     }catch(err){
         console.log(err);
         res.status(404).send({result:"ERROR", error: err});
         return;
     }
+});
+
+//Añadimos un fichero compartido para un usuario concreto
+app.post('/añadirCompartidoUsuario', async (req,res) => {
+  const ficheroId = req.body.ficheroId; 
+  const compartidoId = req.body.compartidoId;
+  const token = req.body.userToken;
+  const userId = req.body.userId;
+  const clave = req.body.clave;
+  if(await comprobarToken(userId, token)){
+    try{
+      const file = await knex('ficheros').select('nombre','ruta').where('fichero_id',ficheroId).first();
+      var fila = {fichero_id: ficheroId, propietario: userId, compartido: compartidoId, rutaFichero: file.ruta, nombreFichero: file.nombre,  claveCompartida: clave};
+      await knex('comparticion_ficheros').insert(fila);
+      res.status(200).send({result:"OK", error: null});
+      return;
+    }catch(err){
+      //Si la fila ya existe
+      if(err.errno == 19){
+        res.status(200).send({result:"OK", error: null});
+        return;
+      }
+      console.log(err);
+      res.status(404).send({result:"ERROR", error: err});
+      return;
+    }
+  }else{
+    res.status(404).send({result:"ERROR", error: "No tienes permisos"});
+    return;
+  }
 });
 
 //FUNCIONES GET
@@ -350,6 +378,23 @@ app.get('/obtenerFichero', async (req,res) => {
         }
         res.status(200).send({data:data, filename: rutaFichero.nombre, clave: rutaFichero.clave});
       });
+    }else{
+      res.status(404).send({result:null, error: err});
+    }
+  }catch(err){
+    console.log(err);
+    res.status(404).send({result:null, error: err});
+    return; 
+  }
+});
+
+app.get('/obtenerClaveFichero', async (req,res) => {
+  //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LA CLAVE 
+  try{
+    const ficheroId = req.query.ficheroId;
+    const rutaFichero = await knex('ficheros').select('clave').where('fichero_id',ficheroId).first();
+    if(rutaFichero.clave){
+      res.status(200).send({clave: rutaFichero.clave});
     }else{
       res.status(404).send({result:null, error: err});
     }
@@ -434,6 +479,7 @@ app.get('/obtenerClavePrivada', async (req,res) => {
   }
 });
 
+//Devuelve los ficheros compartidos CON un usuario especifico
 app.get('/compartidos/otros', async (req,res) => {
   try{
     const usuarioId = req.query.userId;
@@ -446,6 +492,7 @@ app.get('/compartidos/otros', async (req,res) => {
   }
 });
 
+//Devuelve los ficheros compartidos POR un usuario especifico
 app.get('/compartidos/propios', async (req,res) => {
   try{
     const usuarioId = req.query.userId;
@@ -458,6 +505,7 @@ app.get('/compartidos/propios', async (req,res) => {
   }
 });
 
+//Devuelve la lista de usuarios de la BD
 app.get('/usuarios/lista', async (req,res) => {
   try{
     const usuarioId = req.query.userId;
@@ -470,6 +518,7 @@ app.get('/usuarios/lista', async (req,res) => {
   }
 });
 
+//Devuelve los usuarios con los que se ha compartido un fichero
 app.get('/compartidosFichero', async (req,res) => {
   try{
     const ficheroId = req.query.ficheroId;
@@ -486,6 +535,7 @@ app.get('/compartidosFichero', async (req,res) => {
   }
 });
 
+//Devuelve los usuarios con los que NO SE COMPARTE un fichero
 app.get('/noCompartidosFichero', async (req,res) => {
   try{
     const ficheroId = req.query.ficheroId;
@@ -554,14 +604,13 @@ app.delete('/borrarCompartido', async (req,res) => {
       return; 
     }
   }else{
-    res.status(404).send({result:null, error: "El fichero no está siendo compartido"});
+    //Puesto que el fichero no está siendo compartido con ese usuario consideramos que el resultado es correcto
+    res.status(200).send({result:"OK", error: null});
     return; 
   }
 
   try{ 
-    //BORRAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
     await knex('comparticion_ficheros').where({fichero_id: ficheroId, compartido: compartidoId}).del();
-    //Borramos del registro de codigos de drive
     res.status(200).send({result:"OK", error: null});
   }catch(err){
     console.log(err);
@@ -569,6 +618,17 @@ app.delete('/borrarCompartido', async (req,res) => {
     return; 
   }
 });
+
+
+
+
+
+
+
+
+
+
+
 
 const PORT = process.env.PORT || 5000;
 

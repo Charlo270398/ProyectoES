@@ -71,50 +71,6 @@ public class Fichero {
         }
     }
     
-    private void compartirFichero(String ficheroId, String propietario, String AES_KEY, String nombreFichero){
-        
-        for(int i=0; i<PERMITIDOS_listaUsuarios.length; i++){
-            //Obtenemos clave publica del usuario
-            Seguridad.descargarClavePublicaRSA(PERMITIDOS_listaUsuarios[i]);
-            //Ciframos con RSA la clave AES aleatoria
-            String clave_AES_CIFRADA = Seguridad.cifrarConRSA(AES_KEY);
-            //Petición POST
-            OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
-            String url = "https://"+IP+":"+PORT+"/añadirCompartido";
-            RequestBody body = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("ficheroId", ficheroId)
-                    .addFormDataPart("propietario", propietario)
-                    .addFormDataPart("compartido", PERMITIDOS_listaUsuarios[i])
-                    .addFormDataPart("nombre", nombreFichero)
-                    .addFormDataPart("clave", clave_AES_CIFRADA)
-                    .build();
-        
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(body)
-                    .build();
-            Response response = null;
-            try {
-                response = client.newCall(request).execute();
-                byte[] responseBody = response.body().bytes();
-                JSONObject json_response = new JSONObject(new String(responseBody));
-                String result = json_response.getString("result");
-                //Resultado de la petición
-                if(result.equals("OK")){
-                    Seguridad.descargarClavePublicaRSA(MenuUsuario.USER_ID);
-                }else{
-                    String error = json_response.getString("error");
-                    System.out.println(error);
-                }
-            } catch (IOException ex) {
-                System.out.println(ex.toString());
-            } catch (JSONException ex) { 
-                System.out.println(ex.toString());
-            } 
-        }
-    }
-    
     private static void zipSingleFile(File file, String zipFileName) {
         try {
             //create ZipOutputStream to write to the zip file
@@ -236,51 +192,51 @@ public class Fichero {
         }
     }
     
-    public void getFicheroGET(String ficheroId){
-        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
-        String url = "https://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-        try{
-            Response response = client.newCall(request).execute();
-            byte[] responseBody = response.body().bytes();
-            try {
-                JSONObject json_response=new JSONObject(new String(responseBody));
-                JSONObject data = (JSONObject) json_response.get("data");
-                String filename = (String) json_response.get("filename");
-                String clave_AES_CIFRADA = (String) json_response.get("clave");
-                JSONArray bytearray_json = (JSONArray) data.get("data");
-                byte[] bytes = new byte[bytearray_json.length()];
-                for (int i =0; i < bytearray_json.length(); i++ ) {
-                    bytes[i] = (byte)(int)bytearray_json.get(i);
-                }
-                
-                //Obtenemos fichero cifrado con AES
-                File cifradoTEMP = new File(filename);
-                OutputStream os = new FileOutputStream(cifradoTEMP);
-                os.write(bytes);
-                os.close();
-                
-                //Desciframos la clave AES con la clave privada
-                Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
-                String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
-                
-                //Desciframos el fichero
-                Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
-                
-                //Descomprimimos ZIP
-                extractZip(filename + ".zip", new File(USUARIO + "_MIS_FICHEROS"));
-                //Borramos fichero cifrado, el ZIP y la clave privada descifrada
-                cifradoTEMP.delete();
-                File zip = new File(filename + ".zip");
-                zip.delete();
-                File pkdescifrada = new File("private.key");
-                pkdescifrada.delete();
-            } catch (Exception e) {
-                System.out.println(e);
+public void getFicheroGET(String ficheroId){
+    OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+    String url = "https://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
+    Request request = new Request.Builder()
+            .url(url)
+            .get()
+            .build();
+    try{
+        Response response = client.newCall(request).execute();
+        byte[] responseBody = response.body().bytes();
+        try {
+            JSONObject json_response=new JSONObject(new String(responseBody));
+            JSONObject data = (JSONObject) json_response.get("data");
+            String filename = (String) json_response.get("filename");
+            String clave_AES_CIFRADA = (String) json_response.get("clave");
+            JSONArray bytearray_json = (JSONArray) data.get("data");
+            byte[] bytes = new byte[bytearray_json.length()];
+            for (int i =0; i < bytearray_json.length(); i++ ) {
+                bytes[i] = (byte)(int)bytearray_json.get(i);
             }
+
+            //Obtenemos fichero cifrado con AES
+            File cifradoTEMP = new File(filename);
+            OutputStream os = new FileOutputStream(cifradoTEMP);
+            os.write(bytes);
+            os.close();
+
+            //Desciframos la clave AES con la clave privada
+            Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
+            String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
+
+            //Desciframos el fichero
+            Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
+
+            //Descomprimimos ZIP
+            extractZip(filename + ".zip", new File(USUARIO + "_MIS_FICHEROS"));
+            //Borramos fichero cifrado, el ZIP y la clave privada descifrada
+            cifradoTEMP.delete();
+            File zip = new File(filename + ".zip");
+            zip.delete();
+            File pkdescifrada = new File("private.key");
+            pkdescifrada.delete();
+        }catch (Exception e) {
+            System.out.println(e);
+        }
         }catch(Exception e){
             System.out.println(e);
         }
@@ -406,7 +362,7 @@ public class Fichero {
             System.out.println(ex.toString());
         } 
     }
-     public void borrarFichero(String usuario, String ficheroId, String ficheroNombre) throws FileNotFoundException, IOException{
+    public void borrarFichero(String usuario, String ficheroId, String ficheroNombre) throws FileNotFoundException, IOException{
         OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
         String url = "https://"+IP+":"+PORT+"/borrarFichero";
         RequestBody body = new MultipartBody.Builder()
@@ -431,7 +387,6 @@ public class Fichero {
 
             //Resultado de la petición
             if(!result.equals("OK")){
-
                 String error = json_response.getString("error");
                 System.out.println(error);
             }
@@ -440,5 +395,154 @@ public class Fichero {
         } catch (JSONException ex) { 
             System.out.println(ex.toString());
         } 
+    }
+     
+    private void compartirFichero(String ficheroId, String propietario, String AES_KEY, String nombreFichero){
+        
+        for(int i=0; i<PERMITIDOS_listaUsuarios.length; i++){
+            //Obtenemos clave publica del usuario
+            Seguridad.descargarClavePublicaRSA(PERMITIDOS_listaUsuarios[i]);
+            //Ciframos con RSA la clave AES aleatoria
+            String clave_AES_CIFRADA = Seguridad.cifrarConRSA(AES_KEY);
+            //Petición POST
+            OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+            String url = "https://"+IP+":"+PORT+"/añadirCompartido";
+            RequestBody body = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("ficheroId", ficheroId)
+                    .addFormDataPart("propietario", propietario)
+                    .addFormDataPart("compartido", PERMITIDOS_listaUsuarios[i])
+                    .addFormDataPart("nombre", nombreFichero)
+                    .addFormDataPart("clave", clave_AES_CIFRADA)
+                    .build();
+        
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .build();
+            Response response = null;
+            try {
+                response = client.newCall(request).execute();
+                byte[] responseBody = response.body().bytes();
+                JSONObject json_response = new JSONObject(new String(responseBody));
+                String result = json_response.getString("result");
+                //Resultado de la petición
+                if(result.equals("OK")){
+                    Seguridad.descargarClavePublicaRSA(MenuUsuario.USER_ID);
+                }else{
+                    String error = json_response.getString("error");
+                    System.out.println(error);
+                }
+            } catch (IOException ex) {
+                System.out.println(ex.toString());
+            } catch (JSONException ex) { 
+                System.out.println(ex.toString());
+            } 
+        }
+    }
+    
+    public String getClaveFicheroGET(String ficheroId){
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+        String url = "https://"+IP+":"+PORT+"/obtenerClaveFichero?ficheroId="+ficheroId;
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+        try{
+            Response response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            try {
+                JSONObject json_response=new JSONObject(new String(responseBody));
+                String clave_AES_CIFRADA = (String) json_response.get("clave");
+
+                //Desciframos la clave AES con la clave privada
+                Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
+                String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
+                return clave_AES.trim();
+            }catch (Exception e) {
+                System.out.println(e);
+            }
+        }catch(Exception e){
+            System.out.println(e);
+        }
+        return null;
+    }
+    
+    public boolean cancelarComparticionFichero(String compartidoId, String ficheroId) throws FileNotFoundException, IOException{
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+        String url = "https://"+IP+":"+PORT+"/borrarCompartido";
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("compartidoId", compartidoId)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
+                .addFormDataPart("ficheroId", ficheroId)
+                .build();
+        
+        Request request = new Request.Builder()
+                .url(url)
+                .delete(body)
+                .build();
+        Response response = null;
+        try {
+            response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            JSONObject json_response = new JSONObject(new String(responseBody));
+            String result = json_response.getString("result");
+
+            //Resultado de la petición
+            if(!result.equals("OK")){
+                String error = json_response.getString("error");
+                System.out.println(error);
+                return false;
+            }
+            return true;
+        }catch (JSONException ex) { 
+            System.out.println(ex.toString());
+        } 
+        return false;
+    }
+    
+    public boolean compartirFicheroUsuario(String compartidoId, String ficheroId, String AES_KEY){
+        
+        //Obtenemos clave publica del usuario
+        Seguridad.descargarClavePublicaRSA(compartidoId);
+        //Ciframos con RSA la clave AES aleatoria
+        String clave_AES_CIFRADA = Seguridad.cifrarConRSA(AES_KEY);
+        //Petición POST
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+        String url = "https://"+IP+":"+PORT+"/añadirCompartidoUsuario";
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("ficheroId", ficheroId)
+                .addFormDataPart("compartidoId", compartidoId)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
+                .addFormDataPart("clave", clave_AES_CIFRADA)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        Response response = null;
+        try {
+            response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            JSONObject json_response = new JSONObject(new String(responseBody));
+            String result = json_response.getString("result");
+            //Resultado de la petición
+            if(result.equals("OK")){
+                return true;
+            }else{
+                String error = json_response.getString("error");
+                System.out.println(error);
+            }
+        } catch (IOException ex) {
+            System.out.println(ex.toString());
+        } catch (JSONException ex) { 
+            System.out.println(ex.toString());
+        } 
+        return false;
     }
 }
