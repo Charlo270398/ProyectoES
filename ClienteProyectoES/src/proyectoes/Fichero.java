@@ -62,6 +62,12 @@ public class Fichero {
         
     }
     
+    public Fichero(File fichero){
+        this.fichero = fichero;
+        SOURCE_FOLDER = fichero.getAbsolutePath();
+        fileList = new ArrayList();
+    }
+    
     public Fichero(File fichero, String[] PERMITIDOS_listaUsuarios){
         this.fichero = fichero;
         this.PERMITIDOS_listaUsuarios = PERMITIDOS_listaUsuarios;
@@ -207,6 +213,7 @@ public void getFicheroGET(String ficheroId){
             JSONObject data = (JSONObject) json_response.get("data");
             String filename = (String) json_response.get("filename");
             String clave_AES_CIFRADA = (String) json_response.get("clave");
+            System.out.println(clave_AES_CIFRADA);
             JSONArray bytearray_json = (JSONArray) data.get("data");
             byte[] bytes = new byte[bytearray_json.length()];
             for (int i =0; i < bytearray_json.length(); i++ ) {
@@ -222,8 +229,9 @@ public void getFicheroGET(String ficheroId){
             //Desciframos la clave AES con la clave privada
             Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
             String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
-
+            System.out.println(clave_AES);
             //Desciframos el fichero
+            System.out.println(cifradoTEMP.getAbsolutePath());
             Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
 
             //Descomprimimos ZIP
@@ -544,5 +552,81 @@ public void getFicheroGET(String ficheroId){
             System.out.println(ex.toString());
         } 
         return false;
+    }
+    
+    public void subirFicheroMantenimientoCopiasPOST(String nombreCopia, String fichero_id) throws NoSuchAlgorithmException{
+        //COMPRESION A ZIP
+        try{
+            if(fichero.isDirectory()){
+                //SI EL ES CARPETA
+                generateFileList(new File(SOURCE_FOLDER));
+                zipIt("TEMPORAL.zip");//Comprimimos el fichero/carpeta
+            }else{
+                //SI ES UN FICHERO SIMPLE
+                zipSingleFile(fichero, "TEMPORAL.zip");
+            }
+        }catch(Exception ex){
+            System.out.println("ERROR AQUI: " + ex.toString());
+        }
+        
+        //ENVIO DEL FICHERO
+        
+        //Pasamos a zip el fichero
+        File TEMP = new File("TEMPORAL.zip"); //Cargamos el zip temporal para subirlo
+        
+        //Generamos clave aleatoria para AES
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(256);
+        SecretKey secretKey = keyGen.generateKey();
+        String key = String.valueOf(secretKey.getEncoded());
+        // converts to base64 for easier display.
+        byte[] base64Cipher = Base64.getEncoder().encode(secretKey.getEncoded());
+
+        //Ciframos con AES el fichero
+        Seguridad.cifrarFicheroAES(TEMP, nombreCopia, new String(base64Cipher));
+        File cifradoTEMP = new File(nombreCopia);
+        
+        //Ciframos con RSA la clave AES aleatoria
+        String clave_AES_CIFRADA = Seguridad.cifrarConRSA(new String(base64Cipher));
+        OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
+        String url = "https://"+IP+":"+PORT+"/subirFichero";
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
+                .addFormDataPart("copia_diaria", String.valueOf(copia_diaria))
+                .addFormDataPart("copia_semanal", String.valueOf(copia_semanal))
+                .addFormDataPart("copia_mensual", String.valueOf(copia_mensual))
+                .addFormDataPart("clave", clave_AES_CIFRADA)
+                .addFormDataPart("ficheroId", fichero_id)
+                .addFormDataPart("file1", nombreCopia, RequestBody.create(MediaType.parse("zip"), cifradoTEMP))
+                .build();
+        
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        Response response = null;
+        try {
+            response = client.newCall(request).execute();
+            byte[] responseBody = response.body().bytes();
+            JSONObject json_response = new JSONObject(new String(responseBody));
+            String result = json_response.getString("result");
+
+            //Resultado de la petición
+            if(result.equals("OK")){
+                String ficheroId = String.valueOf(json_response.getInt("ficheroId"));
+                compartirFichero(ficheroId, MenuUsuario.USER_ID, new String(base64Cipher), fichero.getName());
+                TEMP.delete();//Borramos el zip temporal
+                cifradoTEMP.delete();//Borramos el cifrado temporal
+            }else{
+                String error = json_response.getString("error");
+                System.out.println(error);
+            }
+        } catch (IOException ex) {
+            System.out.println(ex.toString());
+        } catch (JSONException ex) { 
+            System.out.println(ex.toString());
+        } 
     }
 }

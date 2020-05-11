@@ -35,6 +35,7 @@ import org.json.JSONObject;
 public class Login extends javax.swing.JFrame {
     
     public static MenuUsuario FRAME_menuUsuario = new MenuUsuario();
+    public static MantenimientoCopias STATIC_MANTENIMIENTO_COPIAS;
     public static String IP = "localhost";
     public static String PORT = "5000";
     
@@ -328,9 +329,6 @@ public class Login extends javax.swing.JFrame {
            //COMPROBAR AUTENTICACION
            if(result.equals("OK")){
                //LOGIN CORRECTO
-               //Creamos hilo para realizar copias
-               MantenimientoCopias hiloMantenimientoCopias = new MantenimientoCopias();
-               hiloMantenimientoCopias.start();
                String userId = String.valueOf(json_response.getInt("userId"));
                String userToken= json_response.getString("userToken");
                FRAME_menuUsuario.setUSER_TOKEN(userToken);
@@ -339,6 +337,9 @@ public class Login extends javax.swing.JFrame {
                FRAME_menuUsuario.setUSER_ID(userId);
                FRAME_menuUsuario.setUSER_PK(AES_Hash);
                Seguridad.descargarClavePublicaRSA(userId);
+               //Creamos hilo para realizar copias
+               STATIC_MANTENIMIENTO_COPIAS = new MantenimientoCopias();
+               STATIC_MANTENIMIENTO_COPIAS.start();
                this.setVisible(false);
            }else{
                String error = json_response.getString("error");

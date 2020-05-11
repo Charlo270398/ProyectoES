@@ -249,6 +249,11 @@ app.post('/registrarse', async (req,res) => {
 app.post('/subirFichero', async (req,res) => {
   const token = req.body.userToken;
   const userId = req.body.userId;
+  const paramFicheroId = req.body.ficheroId;
+  if(paramFicheroId){
+    //Si se pasa fichero Id quiere decir que es una copia 
+    await knex('ficheros').where('fichero_id',paramFicheroId).update('fecha_modificacion', dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"));
+  }
   const userName = await knex('usuarios').select('usuario').where('usuario_id',userId).first();
   if(await comprobarToken(userId, token)){
     if(req.files){
@@ -263,18 +268,19 @@ app.post('/subirFichero', async (req,res) => {
       if (!fs.existsSync(folderRoute)) {
         fs.mkdirSync(folderRoute);
       }
-      file.mv(fileRoute, function(err){
-        if(err){
-          console.log(err);
-          res.status(404).send({result:"ERROR", error: err});
-          return;
-        }
-      });
       //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
       try{
+        console.log(fileRoute);
         var fila = {nombre: filename, ruta: fileRoute, propietario: userId, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
                     copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
         const ficheroId = await knex('ficheros').insert(fila);
+        file.mv(fileRoute, function(err){
+          if(err){
+            console.log(err);
+            res.status(404).send({result:"ERROR", error: err});
+            return;
+          }
+        });
         fs.readFile('credentials.json', (err,   content) => {
           if (err) return console.log('Error loading client secret file:', err);
           // Authorize a client with credentials, then call the Google Drive API.
@@ -355,7 +361,7 @@ app.post('/añadirCompartidoUsuario', async (req,res) => {
 app.get('/obtenerListaFicheros', async (req,res) => {
   const userId = req.query.userId;
     try{
-        const fileList = await knex('ficheros').select('fichero_id', 'nombre').where('propietario',userId);
+        const fileList = await knex('ficheros').select('fichero_id', 'nombre', 'fecha_modificacion', 'copia_diaria', 'copia_semanal', 'copia_mensual').where('propietario',userId);
         res.status(200).send({result:fileList, error: null});
         return;
     }catch(err){

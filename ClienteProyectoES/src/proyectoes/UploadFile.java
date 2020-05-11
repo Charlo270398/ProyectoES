@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileSystemView;
 import static proyectoes.Login.FRAME_menuUsuario;
+import static proyectoes.Login.STATIC_MANTENIMIENTO_COPIAS;
 
 /**
  *
@@ -222,6 +223,9 @@ public class UploadFile extends javax.swing.JFrame {
                 jCheckBoxDiaria.setSelected(false);
                 jCheckBoxSemanal.setSelected(false);
                 jCheckBoxMensual.setSelected(false);
+                //Refrescamos hilo para realizar copias
+                STATIC_MANTENIMIENTO_COPIAS = new MantenimientoCopias();
+                STATIC_MANTENIMIENTO_COPIAS.start();
                 this.hide();
                 FRAME_menuUsuario.setVisible(true);
             } catch (IOException ex) {
