@@ -355,10 +355,10 @@ app.post('/añadirCompartidoUsuario', async (req,res) => {
   }
 });
 
-//FUNCIONES GET
-
-app.get('/obtenerListaFicheros', async (req,res) => {
-  const userId = req.query.userId;
+app.post('/obtenerListaFicheros', async (req,res) => {
+  const userId = req.body.userId;
+  const token = req.body.userToken;
+  if(await comprobarToken(userId, token)){
     try{
         const fileList = await knex('ficheros').select('fichero_id', 'nombre', 'fecha_modificacion', 'copia_diaria', 'copia_semanal', 'copia_mensual').where('propietario',userId);
         res.status(200).send({result:fileList, error: null});
@@ -368,30 +368,43 @@ app.get('/obtenerListaFicheros', async (req,res) => {
       res.status(404).send({result:"ERROR", error: err});
       return;
     }
-});
-
-app.get('/obtenerFichero', async (req,res) => {
-  //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LAS RUTAS DEL MISMO ETC, LUEGO DEVOLVERLAS
-  try{
-    const ficheroId = req.query.ficheroId;
-    const rutaFichero = await knex('ficheros').select('ruta','nombre','clave').where('fichero_id',ficheroId).first();
-    if (fs.existsSync(rutaFichero.ruta)) {
-      fs.readFile( rutaFichero.ruta, function (err, data) {
-        if (err) {
-          res.status(404).send({result:null, error: err});
-          return; 
-        }
-        res.status(200).send({data:data, filename: rutaFichero.nombre, clave: rutaFichero.clave});
-      });
-    }else{
-      res.status(404).send({result:null, error: err});
-    }
-  }catch(err){
-    console.log(err);
-    res.status(404).send({result:null, error: err});
-    return; 
+  }else{
+    res.status(404).send({result:"ERROR", error: "No tienes permisos"});
+    return;
   }
 });
+
+app.post('/obtenerFichero', async (req,res) => {
+  const userId = req.body.userId;
+  const token = req.body.userToken;
+  if(await comprobarToken(userId, token)){
+    //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LAS RUTAS DEL MISMO ETC, LUEGO DEVOLVERLAS
+    try{
+      const ficheroId = req.body.ficheroId;
+      const rutaFichero = await knex('ficheros').select('ruta','nombre','clave').where('fichero_id',ficheroId).first();
+      if (fs.existsSync(rutaFichero.ruta)) {
+        fs.readFile( rutaFichero.ruta, function (err, data) {
+          if (err) {
+            res.status(404).send({result:null, error: err});
+            return; 
+          }
+          res.status(200).send({data:data, filename: rutaFichero.nombre, clave: rutaFichero.clave});
+        });
+      }else{
+        res.status(404).send({result:null, error: err});
+      }
+    }catch(err){
+      console.log(err);
+      res.status(404).send({result:null, error: err});
+      return; 
+    }
+  }else{
+    res.status(404).send({result:"ERROR", error: "No tienes permisos"});
+    return;
+  }
+});
+
+//FUNCIONES GET (NO REQUIEREN USUARIO Y TOKEN)
 
 app.get('/obtenerClaveFichero', async (req,res) => {
   //PASAR COMO ARGUMENTO ID DEL FICHERO Y BUSCAR EN BD LA CLAVE 

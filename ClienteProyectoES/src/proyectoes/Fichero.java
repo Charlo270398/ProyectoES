@@ -201,11 +201,17 @@ public class Fichero {
     
 public void getFicheroGET(String ficheroId){
     OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
-    String url = "https://"+IP+":"+PORT+"/obtenerFichero?ficheroId="+ficheroId;
-    Request request = new Request.Builder()
-            .url(url)
-            .get()
-            .build();
+    String url = "https://"+IP+":"+PORT+"/obtenerFichero";
+    RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
+                .addFormDataPart("ficheroId", ficheroId)
+                .build();
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
     try{
         Response response = client.newCall(request).execute();
         byte[] responseBody = response.body().bytes();

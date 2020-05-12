@@ -6,16 +6,13 @@
 package proyectoes;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -100,10 +97,15 @@ public class MantenimientoCopias extends Thread{
     
     public void getListaFicherosGET(){
         OkHttpClient client = Seguridad.getUnsafeOkHttpClient();
-        String url = "https://"+IP+":"+PORT+"/obtenerListaFicheros?userId=" + MenuUsuario.USER_ID;
+        String url = "https://"+IP+":"+PORT+"/obtenerListaFicheros";
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("userId", MenuUsuario.USER_ID)
+                .addFormDataPart("userToken", MenuUsuario.USER_TOKEN)
+                .build();
         Request request = new Request.Builder()
                 .url(url)
-                .get()
+                .post(body)
                 .build();
         try{
             Response response = client.newCall(request).execute();
