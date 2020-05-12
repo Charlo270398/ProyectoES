@@ -21,6 +21,7 @@ public class MenuUsuario extends javax.swing.JFrame {
         initComponents();
     }
     
+    public static Popup FRAME_popup = new Popup();
     public static UploadFile FRAME_uploadFile = new UploadFile();
     public static ListarFicherosCompartidos FRAME_listarFicherosCompartidos ;
     public static ListarFicheros FRAME_listarFicheros = null;
@@ -208,6 +209,8 @@ public class MenuUsuario extends javax.swing.JFrame {
         // TODO add your handling code here:
         STATIC_MANTENIMIENTO_COPIAS = new MantenimientoCopias();
         STATIC_MANTENIMIENTO_COPIAS.sincronizarCarpeta();
+        FRAME_popup.setText("Carpeta sincronizada correctamente");
+        FRAME_popup.setVisible(true);
     }//GEN-LAST:event_jButton3ActionPerformed
 
     /**

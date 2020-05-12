@@ -31,6 +31,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import static proyectoes.Login.IP;
 import static proyectoes.Login.PORT;
+import static proyectoes.MenuUsuario.FRAME_popup;
 import static proyectoes.MenuUsuario.USER_AES_KEY;
 import static proyectoes.MenuUsuario.USUARIO;
 
@@ -213,7 +214,6 @@ public void getFicheroGET(String ficheroId){
             JSONObject data = (JSONObject) json_response.get("data");
             String filename = (String) json_response.get("filename");
             String clave_AES_CIFRADA = (String) json_response.get("clave");
-            System.out.println(clave_AES_CIFRADA);
             JSONArray bytearray_json = (JSONArray) data.get("data");
             byte[] bytes = new byte[bytearray_json.length()];
             for (int i =0; i < bytearray_json.length(); i++ ) {
@@ -229,9 +229,7 @@ public void getFicheroGET(String ficheroId){
             //Desciframos la clave AES con la clave privada
             Seguridad.descargarClavesRSA(USUARIO, USER_AES_KEY);
             String clave_AES = Seguridad.descifrarConRSA(clave_AES_CIFRADA);
-            System.out.println(clave_AES);
             //Desciframos el fichero
-            System.out.println(cifradoTEMP.getAbsolutePath());
             Seguridad.descifrarFicheroAES(cifradoTEMP, filename + ".zip", clave_AES.trim());//Hacemos el trim por tema de formato
 
             //Descomprimimos ZIP
@@ -360,9 +358,12 @@ public void getFicheroGET(String ficheroId){
                 compartirFichero(ficheroId, MenuUsuario.USER_ID, new String(base64Cipher), fichero.getName());
                 TEMP.delete();//Borramos el zip temporal
                 cifradoTEMP.delete();//Borramos el cifrado temporal
+                FRAME_popup.setText("Fichero subido correctamente");
+                FRAME_popup.setVisible(true);
             }else{
                 String error = json_response.getString("error");
-                System.out.println(error);
+                FRAME_popup.setText(error);
+                FRAME_popup.setVisible(true);
             }
         } catch (IOException ex) {
             System.out.println(ex.toString());
@@ -397,6 +398,13 @@ public void getFicheroGET(String ficheroId){
             if(!result.equals("OK")){
                 String error = json_response.getString("error");
                 System.out.println(error);
+                FRAME_popup.setText("Fichero borrado correctamente");
+                FRAME_popup.setVisible(true);
+            }else{
+                String error = json_response.getString("error");
+                System.out.println(error);
+                FRAME_popup.setText(error);
+                FRAME_popup.setVisible(true);
             }
         } catch (IOException ex) {
             System.out.println(ex.toString());

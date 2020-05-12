@@ -17,6 +17,7 @@ import org.json.JSONObject;
 import static proyectoes.Login.FRAME_menuUsuario;
 import static proyectoes.Login.IP;
 import static proyectoes.Login.PORT;
+import static proyectoes.MenuUsuario.FRAME_popup;
 
 /**
  *
@@ -208,6 +209,8 @@ public class ListarFicheros extends javax.swing.JFrame {
             //Ejecutar descarga
             Fichero fichero = new Fichero();
             fichero.getFicheroGET(listaFicherosId[jListMisFicheros.getSelectedIndex()]);
+            FRAME_popup.setText("Fichero descargado correctamente");
+            FRAME_popup.setVisible(true);
         }
     }//GEN-LAST:event_jButtonDescargarActionPerformed
 

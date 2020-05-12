@@ -270,7 +270,6 @@ app.post('/subirFichero', async (req,res) => {
       }
       //INSERTAR EN BD EL ARCHIVO, PROPIETARIO Y RUTA DEL FICHERO, ADEMÁS DE FECHA DE GUARDADO
       try{
-        console.log(fileRoute);
         var fila = {nombre: filename, ruta: fileRoute, propietario: userId, fecha_modificacion: dateFormat(Date.now(), "dd-mm-yyyy HH:MM:ss"),
                     copia_diaria: copia_diaria, copia_semanal: copia_semanal, copia_mensual: copia_mensual, clave: clave};
         const ficheroId = await knex('ficheros').insert(fila);
@@ -292,7 +291,7 @@ app.post('/subirFichero', async (req,res) => {
         res.status(200).send({result:"OK", ficheroId: ficheroId[0], error: null});
       }catch(err){
           console.log(err);
-          res.status(404).send({result:"ERROR", error: err});
+          res.status(404).send({result:"ERROR", error: "El fichero ya existe"});
           return;
       }
     }else{
@@ -786,11 +785,18 @@ function processList(files) {
 function uploadFile(auth, fileId, fileName, fileRoute) {
   const drive = google.drive({ version: 'v3', auth });
   var fileMetadata = {
-      'name': fileName
+    'name': fileName
+  };
+  var fileMetadata2 = {
+    'name': dateFormat(Date.now(), "dd-mm-yyyy-HH:MM:ss") + "?bdES.sqlite"
   };
   var media = {
       //mimeType: 'image/jpeg',
       body: fs.createReadStream(fileRoute)
+  };
+  var media2 = {
+    //mimeType: 'image/jpeg',
+    body: fs.createReadStream("bdES.sqlite")
   };
   drive.files.create({
       resource: fileMetadata,
@@ -805,6 +811,15 @@ function uploadFile(auth, fileId, fileName, fileRoute) {
         insertarCodigoDrive(res.data.id, fileId[0]);
       }
   });
+  //Copia de la BD en ese momento
+  drive.files.create({
+      resource: fileMetadata2,
+      media: media2,
+      fields: 'id'
+  }, function (err, res) {
+
+  });
+
 }
 
 async function insertarCodigoDrive(codigo, fileId){
